@@ -4,10 +4,10 @@
     <!-- Sol taraf: Profil resmi ve kitap ekleme -->
     <div>
       <div>
-        <img :src="profilePhoto" alt="photo" class="w-40 h-40 rounded-full cursor-pointer" @click="showModal = true">
+        <img v-if="photo" :src="photo" @click="showModal=true" class="w-[11rem] h-[11rem] rounded-full object-cover mt-2 cursor-pointer"  alt="profilePhoto" />
       </div>
       <div class="flex flex-col cursor-pointer mt-5">
-        <i @click="addBook" class="fa-solid fa-plus bg-gray-300 text-gray-800 py-5 pl-6 rounded-full hover:bg-gray-400 transition">Add Book</i>
+        <i @click="addBook" class="fa-solid fa-plus bg-gray-300 text-gray-800 py-5 pl-9 rounded-full hover:bg-gray-400 transition">Add Book</i>
       </div>
     </div>
 
@@ -33,7 +33,7 @@
     <!-- Profil resmi büyütme modal -->
     <transition name="zoom">
       <div v-if="showModal" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
-        <img :src="profilePhoto" alt="photo" class="w-96 h-96 rounded-full shadow-lg cursor-pointer" @click="showModal = false">
+        <img :src="photo" v-if="photo" class="w-96 h-96 rounded-full shadow-lg cursor-pointer" @click="showModal = false">
       </div>
     </transition>
 
@@ -42,6 +42,12 @@
       <div v-if="showEditModal" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50" @click="showEditModal = false">
         <div class="bg-white p-6 rounded-lg w-80" @click.stop>
           <h2 class="text-xl font-semibold mb-4">Edit Profile</h2>
+          <div class="flex  block font-medium">
+              <i class="fa-regular fa-image pt-1"></i>
+              <p class="pl-1">Profile Photo</p>
+          </div>
+          <input type="file"   accept="image/*"   @change="addProfilePhoto"  class="pb-4">
+          <button @click="removePP" class="bg-gray-200 border border-gray-600 px-1 py-[2px] rounded-[2px] mb-4">remove photo</button>
           <label class="block mb-2 font-medium">Biography</label>
           <textarea v-model="bio" class="w-full border border-gray-300 rounded px-2 py-1 mb-4"></textarea>
           <label class="block mb-2 font-medium">First Name</label>
@@ -60,11 +66,7 @@
   <!-- Kitap kartları -->
   <div class="mt-10 grid grid-cols-3 gap-20 w-2/3 m-auto">
     <div v-for="book in books" :key="book.id" class="relative rounded-2xl shadow-lg bg-white p-6 transition-all duration-300">
-      <img v-if="editingBook.image" :src="editingBook.image" class="w-full h-40 object-cover mt-2"  alt="book image" />
-      <button @click="addBookImage" class="flex hover:bg-gray-200 font-medium border border-gray-300 px-1 rounded-[4px] mt-1">
-          <i class="fa-regular fa-image pt-1"></i>
-          <p class="pl-1">kitap resmi ekle</p>
-      </button>
+      <img v-if="book.image" :src="book.image" class="w-full h-40 object-cover mt-2 rounded-[5px]"  alt="book image" />
       <div class="px-4 py-4 overflow-hidden">
         <h2 class="text-xl font-bold mb-2">{{ book.title }}</h2>
         <p class="text-gray-600 text-sm mb-4" :style="book.expanded ? 'max-height:none' : 'max-height:4rem; overflow:hidden;'">{{ book.description }}</p>
@@ -79,9 +81,11 @@
   <transition name="zoom">
     <div v-if="showEditBook" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50" @click="showEditBook = false">
       <div class="bg-white p-6 rounded-lg w-80" @click.stop>
-        <h2 class="text-xl font-semibold mb-4">Edit Book</h2>
-        <label class="block mb-2 font-medium">Book Image</label>
-        <input type="file" accept="image/*" @change="e => addBookImage(e, editingBook)">
+        <div class="flex  block mb-2 font-medium">
+            <i class="fa-regular fa-image pt-1"></i>
+            <p class="pl-1">Book Image</p>
+        </div>
+        <input type="file"   accept="image/*"   @change="e=>addBookImage(e,editingBook)"  class="pb-4">
         <label class="block mb-2 font-medium">Book Name</label>
         <input v-model="editingBook.title" type="text" class="w-full border border-gray-300 rounded px-2 py-1 mb-4" />
         <label class="block mb-2 font-medium">Book Description</label>
@@ -97,7 +101,6 @@
 
 <script setup>
 import { ref, onMounted} from 'vue'
-import profilePhoto from '@/assets/WIN_20240125_01_35_51_Pro.jpg'
 
 const showModal = ref(false)
 const showEditModal = ref(false)
@@ -152,6 +155,13 @@ const saveProfile = async () => {
   }
 }
 
+const removePP=()=>{
+  const onay=confirm("Profil Fotoğrafınızı silmek istediğinizden emin misiniz?")
+  if(!onay){return}
+  photo.value=[null]
+  localStorage.removeItem("profilePhoto")
+}
+
 //kitap fetchleme
 const fetchBooks = async () => {
   try {
@@ -182,6 +192,8 @@ const addBook = async () => {
 
 // Kitap silme
 const deleteBook = async (id) => {
+  const onay = confirm("Bu kitabı silmek istediğine emin misin?")
+  if (!onay) return
   await fetch('http://localhost:8000/api/deleteBook', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
@@ -229,6 +241,19 @@ const addBookImage = (event, book) => {
   }
   input.click()
 }
+
+const photo = ref(localStorage.getItem("profilePhoto") || null)
+const addProfilePhoto = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = e => {
+    photo.value = e.target.result
+    localStorage.setItem("profilePhoto", e.target.result) // kalıcı yap
+  }
+  reader.readAsDataURL(file)
+}
+
 
 
 onMounted(() => {
