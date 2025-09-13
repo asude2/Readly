@@ -1,10 +1,18 @@
 <template>
-  <div class="flex justify-center mt-20 gap-20 relative">
+  <div class="pl-7 pt-5">
+    <h1 class="text-red-500 text-3xl font-medium italic font-serif flex  cursor-default">
+        Readly
+        <i class="fa-solid fa-book-open text-2xl px-2 hover:scale-110 transition-transform transition-colors duration-700 border-2 border-transparent rounded-full"></i>
+    </h1>
+    <i @click="goMainPg" class="fa-regular fa-circle-left text-4xl  cursor-pointer"></i>
+  </div>
+
+  <div class="flex justify-center gap-20 relative">
 
     <!-- Sol taraf: Profil resmi ve kitap ekleme -->
     <div>
       <div>
-        <img v-if="photo" :src="photo" @click="showModal=true" class="w-[11rem] h-[11rem] rounded-full object-cover mt-2 cursor-pointer"  alt="profilePhoto" />
+        <img v-if="photo" :src="photo" @click="showModal=true" class="w-[11rem] h-[11rem] rounded-full object-cover mt-2 cursor-pointer border border-gray-400"  alt="profilePhoto" />
       </div>
       <div class="flex flex-col cursor-pointer mt-5">
         <i @click="addBook" class="fa-solid fa-plus bg-gray-300 text-gray-800 py-5 pl-9 rounded-full hover:bg-gray-400 transition">Add Book</i>
@@ -21,8 +29,14 @@
         </div>
       </div>
       <div class="flex gap-12 pt-2">
-        <p>Followers:</p>
-        <p>Following:</p>
+        <div class="flex cursor-pointer">
+            <p class="font-bold text-[18px]">{{ followersCount }}&nbsp;</p>
+            <p> followers</p>
+        </div>
+        <div class="flex cursor-pointer">
+            <p class="font-bold text-[18px]">{{ followingCount }}&nbsp;</p>
+            <p> following</p>
+        </div>
       </div>
       <div class="pt-5">
         <p class="isim font-semibold text-xl">{{ firstname }} {{ lastname }}</p>
@@ -30,14 +44,14 @@
       </div>
     </div>
 
-    <!-- Profil resmi büyütme modal -->
+    <!-- Profil resmi büyültme  -->
     <transition name="zoom">
-      <div v-if="showModal" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
-        <img :src="photo" v-if="photo" class="w-96 h-96 rounded-full shadow-lg cursor-pointer" @click="showModal = false">
+      <div v-if="showModal" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50" @click="showModal=false">
+        <img :src="photo" class="w-96 h-96 rounded-full shadow-lg cursor-pointer" @click="showModal = false">
       </div>
     </transition>
 
-    <!-- Profil düzenleme modal -->
+    <!-- Profil düzenleme (edit profile kısmını büyültme) -->
     <transition name="zoom">
       <div v-if="showEditModal" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50" @click="showEditModal = false">
         <div class="bg-white p-6 rounded-lg w-80" @click.stop>
@@ -46,7 +60,7 @@
               <i class="fa-regular fa-image pt-1"></i>
               <p class="pl-1">Profile Photo</p>
           </div>
-          <input type="file"   accept="image/*"   @change="addProfilePhoto"  class="pb-4">
+          <input type="file" accept="image/*" @change="addProfilePhoto" class="pb-4"> <!--accept:sadece resim formatındaki dosyaların seçilmesine izin verir.-->
           <button @click="removePP" class="bg-gray-200 border border-gray-600 px-1 py-[2px] rounded-[2px] mb-4">remove photo</button>
           <label class="block mb-2 font-medium">Biography</label>
           <textarea v-model="bio" class="w-full border border-gray-300 rounded px-2 py-1 mb-4"></textarea>
@@ -66,7 +80,7 @@
   <!-- Kitap kartları -->
   <div class="mt-10 grid grid-cols-3 gap-20 w-2/3 m-auto">
     <div v-for="book in books" :key="book.id" class="relative rounded-2xl shadow-lg bg-white p-6 transition-all duration-300">
-      <img v-if="book.image" :src="book.image" class="w-full h-40 object-cover mt-2 rounded-[5px]"  alt="book image" />
+      <img :src="book.image" class="w-full h-40 object-cover mt-2 rounded-[5px]"  alt="book image" />
       <div class="px-4 py-4 overflow-hidden">
         <h2 class="text-xl font-bold mb-2">{{ book.title }}</h2>
         <p class="text-gray-600 text-sm mb-4" :style="book.expanded ? 'max-height:none' : 'max-height:4rem; overflow:hidden;'">{{ book.description }}</p>
@@ -96,11 +110,14 @@
       </div>
     </div>
   </transition>
-
 </template>
 
 <script setup>
 import { ref, onMounted} from 'vue'
+import { useRouter } from 'vue-router'
+import defaultPhoto from "@/assets/defaultPhoto.png"
+
+const router=useRouter()
 
 const showModal = ref(false)
 const showEditModal = ref(false)
@@ -112,18 +129,21 @@ const lastname = ref('')
 const bio = ref('')
 const username = ref('')
 const books = ref([])
+const photo = ref(defaultPhoto)
+const followersCount=ref(0)
+const followingCount=ref(0)
+
 
 //profil fetchleme
 const fetchProfile = async () => {
   username.value = localStorage.getItem('username') || ''
-
-    if (!username.value) {
-    console.error('Username bulunamadı')
-    return
+  if (!username.value) {
+  console.error('Username bulunamadı')
+  return
   }
   try {
-    const res = await fetch(`http://localhost:8000/api/profile?username=${username.value}`)
-    const data = await res.json()
+    const res = await fetch(`http://localhost:8000/api/profile?username=${username.value}`) //backenddeki profile endpointine get isteği atılıyor
+    const data = await res.json() //backend bu username'e göre kullanıcı bilgilerini bulup jsona döndürüyor. Datada kullanıcı bilgileri var.
     if (res.ok) {
       firstname.value=data.firstname || ""
       lastname.value=data.lastname || ""
@@ -148,19 +168,38 @@ const saveProfile = async () => {
       },
       body: JSON.stringify(updatedProfile)
     });
-    showEditModal.value = false;
+    showEditModal.value=false;
     await fetchProfile();
   } catch(err){
     console.log("Profile edit error:", err)
   }
 }
 
+const addProfilePhoto = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = e => {
+    photo.value = e.target.result
+    localStorage.setItem(`profilePhoto_${username.value}`, e.target.result)
+  }
+  reader.readAsDataURL(file)
+}
+
 const removePP=()=>{
   const onay=confirm("Profil Fotoğrafınızı silmek istediğinizden emin misiniz?")
   if(!onay){return}
-  photo.value=[null]
-  localStorage.removeItem("profilePhoto")
+  photo.value=defaultPhoto
+  localStorage.removeItem(`profilePhoto_${username.value}`)
 }
+const savedPhoto = localStorage.getItem(`profilePhoto_${localStorage.getItem("username")}`)
+if (savedPhoto) {
+  photo.value = savedPhoto
+}
+else{
+  photo.value=defaultPhoto
+}
+
 
 //kitap fetchleme
 const fetchBooks = async () => {
@@ -235,23 +274,24 @@ const addBookImage = (event, book) => {
     if (!file) return
     const reader = new FileReader()
     reader.onload = e => {
-      book.image = e.target.result // base64 string
+      book.image = e.target.result
     }
     reader.readAsDataURL(file)
   }
   input.click()
 }
 
-const photo = ref(localStorage.getItem("profilePhoto") || null)
-const addProfilePhoto = (event) => {
-  const file = event.target.files[0]
-  if (!file) return
-  const reader = new FileReader()
-  reader.onload = e => {
-    photo.value = e.target.result
-    localStorage.setItem("profilePhoto", e.target.result) // kalıcı yap
+const fetchFollowers=async()=>{
+    try {
+    const res = await fetch(`http://localhost:8000/api/getFollowers?username=${username.value}`)
+    const data = await res.json()
+    if (res.ok) {
+      followersCount.value = data.followers
+      followingCount.value = data.following
+    }
+  } catch (err) {
+    console.error('Takipçi bilgisi çekilemedi:', err)
   }
-  reader.readAsDataURL(file)
 }
 
 
@@ -259,7 +299,14 @@ const addProfilePhoto = (event) => {
 onMounted(() => {
   fetchProfile()
   fetchBooks()
+  fetchFollowers()
 })
+
+
+ const goMainPg=()=>{
+    router.push("/anasayfa")
+  }
+
 </script>
 
 <style scoped>

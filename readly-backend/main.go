@@ -35,7 +35,6 @@ func initDB() {
 	if err != nil {
 		log.Fatal("Veritabanı bağlantı hatası:", err)
 	}
-
 	// Users tablosu
 	createUsersTable := `CREATE TABLE IF NOT EXISTS users (
 		"id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -70,6 +69,18 @@ func initDB() {
 	if err != nil {
 		log.Println("Books tablosuna username eklenemedi (muhtemelen zaten var):", err)
 	}
+
+	createFollowTable:= `CREATE TABLE IF NOT EXISTS follow (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		follower TEXT NOT NULL,
+		following TEXT NOT NULL,
+		UNIQUE(follower, following)
+	);`
+	_, err = db.Exec(createFollowTable)
+	if err != nil {
+		log.Fatal("Follow tablosunu oluşturma hatası:", err)
+	}
+
 
 	log.Println("Veritabanı başarıyla hazırlandı.")
 }
@@ -296,6 +307,74 @@ func updateBookHandler(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]string{"message": "Kitap güncellendi"})
 }
 
+func findUsersHandler(w http.ResponseWriter, r *http.Request) {
+    query := r.URL.Query().Get("q")
+    currentUser := r.URL.Query().Get("current") 
+
+    rows, err := db.Query(`SELECT username, firstname FROM users WHERE username LIKE ?`, "%"+query+"%")
+    if err != nil {
+        respondJSON(w, http.StatusInternalServerError, map[string]string{"error":"DB error"})
+        return
+    }
+    defer rows.Close()
+
+    var users []map[string]interface{}
+    for rows.Next() {
+        var username, firstname string
+        rows.Scan(&username, &firstname)
+        var count int
+        db.QueryRow(`SELECT COUNT(*) FROM follow WHERE follower=? AND following=?`, currentUser, username).Scan(&count)
+
+        users = append(users, map[string]interface{}{
+            "username": username,
+            "firstname": firstname,
+            "isFollowing": count > 0,
+        })
+    }
+    respondJSON(w, http.StatusOK, users)
+}
+
+
+func followUserHandler(w http.ResponseWriter, r *http.Request) {
+    var req struct{
+        Follower string `json:"follower"`
+        Following string `json:"following"`
+        Action string `json:"action"`
+    }
+    json.NewDecoder(r.Body).Decode(&req)
+
+    if req.Action == "follow" {
+        _, err := db.Exec(`INSERT OR IGNORE INTO follow(follower, following) VALUES(?,?)`, req.Follower, req.Following)
+        if err != nil {
+            respondJSON(w, 500, map[string]string{"error":"DB error"})
+            return
+        }
+    } else {
+        _, err := db.Exec(`DELETE FROM follow WHERE follower=? AND following=?`, req.Follower, req.Following)
+        if err != nil {
+            respondJSON(w, 500, map[string]string{"error":"DB error"})
+            return
+        }
+    }
+    respondJSON(w, 200, map[string]string{"message":"success"})
+}
+
+
+func getFollowersHandler(w http.ResponseWriter, r *http.Request) {
+    username := r.URL.Query().Get("username")
+    var followersCount, followingCount int
+
+    db.QueryRow("SELECT COUNT(*) FROM follow WHERE following = ?", username).Scan(&followersCount)
+    db.QueryRow("SELECT COUNT(*) FROM follow WHERE follower = ?", username).Scan(&followingCount)
+
+    respondJSON(w, http.StatusOK, map[string]int{
+        "followers": followersCount,
+        "following": followingCount,
+    })
+}
+
+
+
 func main() {
 	initDB()
 
@@ -308,6 +387,10 @@ func main() {
 	http.Handle("/api/getBooks", enableCORS(http.HandlerFunc(getBooksHandler)))
 	http.Handle("/api/deleteBook", enableCORS(http.HandlerFunc(deleteBookHandler)))
 	http.Handle("/api/updateBook", enableCORS(http.HandlerFunc(updateBookHandler)))
+
+	http.Handle("/api/findUsers", enableCORS(http.HandlerFunc(findUsersHandler)))
+	http.Handle("/api/followUser", enableCORS(http.HandlerFunc(followUserHandler)))
+	http.Handle("/api/getFollowers", enableCORS(http.HandlerFunc(getFollowersHandler)))
 
 	http.Handle("/api/debugBooksColumns", enableCORS(http.HandlerFunc(debugBooksColumnsHandler)))
 

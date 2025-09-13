@@ -1,6 +1,6 @@
 <template>
     <div class="max-w-md mx-auto mt-10 p-6 border rounded-lg shadow-lg">
-        <h1 class="text-2xl p-5"><i class="fa-solid fa-arrow-left pr-2"></i>Giriş Yap</h1>
+        <h1 class="text-2xl p-5"><i class="fa-solid fa-arrow-left pr-2" @click="logoutApp"></i>Giriş Yap</h1>
 
         <div v-if="message" class="p-4 mb-4 text-sm rounded-lg" :class="isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'">
             {{ message }}
@@ -46,6 +46,9 @@ export default {
     methods: {
         goToRegister() {
             this.$router.push('/register')
+        },
+        logoutApp(){
+            window.location.href = "https://www.google.com"
         },
         async handleLogin() {
             this.isLoading = true;
