@@ -374,6 +374,28 @@ func getFollowersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 
+func getAllBooksHandler(w http.ResponseWriter, r *http.Request) {
+    rows, err := db.Query("SELECT id, title, description, image, username FROM books")
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    defer rows.Close()
+
+    var books []Book
+    for rows.Next() {
+        var b Book
+        if err := rows.Scan(&b.ID, &b.Title, &b.Description, &b.Image, &b.Username); err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+        books = append(books, b)
+    }
+    respondJSON(w, http.StatusOK, books)
+}
+
+
+
 
 func main() {
 	initDB()
@@ -391,6 +413,8 @@ func main() {
 	http.Handle("/api/findUsers", enableCORS(http.HandlerFunc(findUsersHandler)))
 	http.Handle("/api/followUser", enableCORS(http.HandlerFunc(followUserHandler)))
 	http.Handle("/api/getFollowers", enableCORS(http.HandlerFunc(getFollowersHandler)))
+
+	http.Handle("/api/getAllBooks", enableCORS(http.HandlerFunc(getAllBooksHandler)))
 
 	http.Handle("/api/debugBooksColumns", enableCORS(http.HandlerFunc(debugBooksColumnsHandler)))
 

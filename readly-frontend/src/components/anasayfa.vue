@@ -1,54 +1,79 @@
 <template>
-  <div class="flex justify-between">
-        <div class="pl-7 pt-5">
-          <h1 class="text-red-500 text-3xl font-medium italic font-serif flex  cursor-default">
-              Readly
-              <i class="fa-solid fa-book-open text-2xl px-2 hover:scale-110 transition-transform transition-colors duration-700 border-2 border-transparent rounded-full"></i>
-          </h1>
-          <i @click="goLoginPg" class="fa-regular fa-circle-left text-4xl  cursor-pointer"></i>
-        </div>
+  <div >
+      <!--------------------------------------------HEADER KISMI------------------------------------------------------------------------>
+        <div class="flex justify-between">
+          <!-- ------------logo kısmı-------------- -->
+          <div class="pl-7 pt-5">
+            <h1 class="text-red-500 text-3xl font-medium italic font-serif flex  cursor-default">
+                Readly
+                <i class="fa-solid fa-book-open text-2xl px-2 hover:scale-110 transition-transform transition-colors duration-700 border-2 border-transparent rounded-full"></i>
+            </h1>
+            <i @click="goLoginPg" class="fa-regular fa-circle-left text-4xl  cursor-pointer"></i>
+          </div>
 
-        <div class="pt-5">
+          <!-- ------------arama çubukları kısmı-------------- -->
+          <div class="pt-5">
             <nav class="w-full">
                 <ul class="flex items-center tracking-widest justify-center space-x-12">
                   <li>
-                    <a href="#" class="relative after:block after:h-px after:w-0 after:bg-black after:transition-all after:duration-500 after:absolute after:bottom-0 after:left-0 hover:after:w-full">
-                      kitaplar
+                    <a @click="kitapAra" href="#" class="relative after:block after:h-px after:w-0 after:bg-black after:transition-all after:duration-500 after:absolute after:bottom-0 after:left-0 hover:after:w-full">
+                      kitap yorumlamaları
                     </a>
                   </li>
                   <li>
-                    <a href="#" class="relative after:block after:h-px after:w-0 after:bg-black after:transition-all after:duration-500 after:absolute after:bottom-0 after:left-0 hover:after:w-full">
+                    <a @click="okurAra" href="#" class="relative after:block after:h-px after:w-0 after:bg-black after:transition-all after:duration-500 after:absolute after:bottom-0 after:left-0 hover:after:w-full">
                       okurlar
                     </a>
                   </li>
                   <li>
                     <a href="#" class="relative after:block after:h-px after:w-0 after:bg-black after:transition-all after:duration-500 after:absolute after:bottom-0 after:left-0 hover:after:w-full">
-                      yorumlamalar
+                      kitaplar
                     </a>
                   </li>
                 </ul>
             </nav>
-            <div class="flex items-center border border-gray-300 rounded-full px-3 my-4 w-full">
+            <!--okur arama çubuğu-->
+            <div v-if="okurGör" class="flex items-center border border-gray-300 rounded-full px-3 my-4 w-full">
                 <i class="fa-solid fa-magnifying-glass text-gray-500"></i>
-                <input v-model="searchQuery" type="text" placeholder="arama yap.." class="w-full px-2 py-1 outline-none rounded-full"/>
+                <input v-model="searchQuery" type="text" placeholder="kullanıcı ara.." class="w-full px-2 py-1 outline-none rounded-full"/>
                 <button @click="searchUsers" class="bg-gray-200 rounded-[20px] hover:bg-gray-300 px-3 cursor-pointer">ARA</button>
             </div>
-            <div v-for="user in users" :key="user.username" class="flex bg-gray-200 justify-between items-center border rounded-[20px] py-2 m-2 cursor-pointer border-gray-300 ">
+            <div v-if="okurGör" v-for="user in users.filter(u=>u.username!==username)" :key="user.username" class="flex bg-gray-200 justify-between items-center border rounded-[20px] py-2 m-2 cursor-pointer border-gray-300 ">
                 <p class="font-semibold mx-6">{{user.username}} {{ user.firstName }}{{ user.lastName }}</p>
                 <button @click="follow(user.username, user.isFollowing)" class="bg-black text-white border rounded-[10px] px-2 py-[2px] font-light text-[15px] hover:bg-gray-700 mx-6">{{ user.isFollowing ? 'Takipten Çık' : 'Takip Et' }}</button>
             </div>
+            <!--kitap yorumu arama çubuğu-->
+            <div v-if="kitapGör" class="flex items-center border border-gray-300 rounded-full px-3 my-4 w-full">
+                <i class="fa-solid fa-magnifying-glass text-gray-500"></i>
+                <input v-model="searchBookQuery" type="text" placeholder="kitap ara.." class="w-full px-2 py-1 outline-none rounded-full"/>
+            </div>
+          </div>
+
+          <!-- -------------profile gitme kısmı------------ -->
+          <div @click.prevent="goToProfile" class="pt-3">
+            <i class="fa-solid fa-circle-user p-3 text-3xl flex cursor-pointer"><p class="px-1 text-2xl">profil</p></i>
+          </div>
         </div>
 
-        <div @click.prevent="goToProfile" class="pt-3">
-          <i class="fa-solid fa-circle-user p-3 text-3xl flex cursor-pointer"><p class="px-1 text-2xl">profil</p></i>
+        <!--------------------------------------------CONTENT KISMI-------------------------------------------------------------------->
+        <div class="flex-column justify-center items-start min-h-screen m-10">
+          <div v-for="book in filteredBooks" :key="book.id" class="rounded-2xl shadow-lg bg-gray-200 p-6 transition-all duration-300 w-[90%] relative justify-center m-10 ">
+            <p class="font-bold text-xl ml-5 mb-8 mt-2 bg-white px-4 py-2 inline-block border rounded-[10px]">{{ book.username }}</p>
+            <img class="w-[20%] h-40 m-5 object-cover  rounded-[5px]" alt="book image" :src="book.image" />
+            <div class="px-4 py-4 overflow-hidden">
+              <h2 class="text-xl font-bold mb-2">{{book.title}}</h2>
+              <p class="text-gray-600 text-sm mb-4">{{book.description}}</p>
+            </div>
+          </div>
         </div>
+
 
   </div>
 
 </template>
 
 <script setup>
-import { ref, onMounted} from 'vue'
+import { ref, onMounted, computed} from 'vue'
 import { useRouter } from 'vue-router'
 
 const router=useRouter()
@@ -64,7 +89,17 @@ const lastname = ref('')
 const username = ref('')
 const users = ref([])
 const searchQuery=ref('')
+const okurGör=ref(false)
+const kitapGör=ref(true)
+const books=ref([])
+const searchBookQuery = ref("")
 
+const filteredBooks = computed(() => {
+  if (!searchBookQuery.value) return books.value
+  return books.value.filter(book =>
+    book.title.toLowerCase().includes(searchBookQuery.value.toLowerCase())
+  )
+})
 
 
 
@@ -72,8 +107,8 @@ const searchQuery=ref('')
 const fetchProfile = async () => {
   username.value = localStorage.getItem('username') || ''
   if (!username.value) {
-  console.error('Username bulunamadı')
-  return
+    console.error('Username bulunamadı')
+    return
   }
   try {
     const res = await fetch(`http://localhost:8000/api/profile?username=${username.value}`) //backenddeki profile endpointine get isteği atılıyor
@@ -95,7 +130,10 @@ const searchUsers=async()=>{
       users.value=data
     }
     else console.error('Kullanıcı bulunamadı:',data.error)
+
+
   }
+
   catch (err){console.error('Kullanıcı arama hatası:', err)}
 }
 
@@ -112,11 +150,35 @@ const follow = async (targetUsername, isFollowing) => {
         action
       })
     })
+
     const data = await res.json()
     if (res.ok) {
       searchUsers()
     } else console.error('Takip hatası:', data.error)
   } catch (err) { console.error('Takip hatası:', err) }
+}
+
+
+const okurAra=()=>{
+  kitapGör.value=false
+  okurGör.value=true
+}
+const kitapAra=()=>{
+  okurGör.value=false
+  kitapGör.value=true
+}
+
+
+const fetchAllBooks= async () => {
+  try{
+    const res= await fetch(`http://localhost:8000/api/getAllBooks`)
+    const data=await res.json()
+    if(res.ok){
+      books.value=data
+    }
+    else { console.error('Kitap Bulunamadı:',data.error) }
+  }
+  catch (err) { console.error('Kitap fetch hatası:', err) }
 }
 
 
@@ -134,6 +196,7 @@ const follow = async (targetUsername, isFollowing) => {
 
 onMounted(() => {
   fetchProfile()
+  fetchAllBooks()
 })
 
 </script>
