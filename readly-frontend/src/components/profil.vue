@@ -14,7 +14,7 @@
       <div>
         <img v-if="photo" :src="photo" @click="showModal=true" class="w-[11rem] h-[11rem] rounded-full object-cover mt-2 cursor-pointer border border-gray-400"  alt="profilePhoto" />
       </div>
-      <div class="flex flex-col cursor-pointer mt-5">
+      <div v-if="username === localStorage.getItem('username')" class="flex flex-col cursor-pointer mt-5">
         <i @click="addBook" class="fa-solid fa-plus bg-gray-300 text-gray-800 py-5 pl-9 rounded-full hover:bg-gray-400 transition">Add Book</i>
       </div>
     </div>
@@ -23,17 +23,17 @@
     <div class="w-72">
       <div class="flex gap-10 items-center">
         <h1 class="username text-2xl font-semibold">{{ username }}</h1>
-        <div class="flex items-center gap-2">
+        <div v-if="username === localStorage.getItem('username')" class="flex items-center gap-2">
           <button class="bg-black text-white font-medium rounded-[15px] px-4 py-1 hover:bg-gray-800" @click="showEditModal = true">Edit Profile</button>
           <i class="fa-solid fa-gear text-xl cursor-pointer"></i>
         </div>
       </div>
       <div class="flex gap-12 pt-2">
-        <div class="flex cursor-pointer">
+        <div @click="showFollowers=true" class="flex cursor-pointer">
             <p class="font-bold text-[18px]">{{ followersCount }}&nbsp;</p>
             <p> followers</p>
         </div>
-        <div class="flex cursor-pointer">
+        <div @click="showFollowing=true" class="flex cursor-pointer">
             <p class="font-bold text-[18px]">{{ followingCount }}&nbsp;</p>
             <p> following</p>
         </div>
@@ -61,7 +61,7 @@
               <p class="pl-1">Profile Photo</p>
           </div>
           <input type="file" accept="image/*" @change="addProfilePhoto" class="pb-4"> <!--accept:sadece resim formatındaki dosyaların seçilmesine izin verir.-->
-          <button @click="removePP" class="bg-gray-200 border border-gray-600 px-1 py-[2px] rounded-[2px] mb-4">remove photo</button>
+          <button v-if="username===localStorage.getItem('username')" @click="removePP" class="bg-gray-200 border border-gray-600 px-1 py-[2px] rounded-[2px] mb-4">remove photo</button>
           <label class="block mb-2 font-medium">Biography</label>
           <textarea v-model="bio" class="w-full border border-gray-300 rounded px-2 py-1 mb-4"></textarea>
           <label class="block mb-2 font-medium">First Name</label>
@@ -71,6 +71,24 @@
           <div class="flex justify-end gap-2">
             <button class="px-4 py-1 rounded bg-black text-white" @click="saveProfile">Save</button>
           </div>
+        </div>
+      </div>
+    </transition>
+
+    <!--takipçileri görme-->
+    <transition name="zoom">
+      <div v-if="showFollowers" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 flex flex-col" @click="showFollowers=false">
+        <div v-for="f in followers" :key="f"  class="bg-white p-3 pl-7 rounded-lg w-80 flex flex-col m-[1px]" @click.stop>
+          <div>{{ f }}</div>
+        </div>
+      </div>
+    </transition>
+
+    <!--takip etiklerimi görme-->
+    <transition name="zoom">
+      <div v-if="showFollowing" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 flex flex-col" @click="showFollowing=false">
+        <div v-for="f in following" :key="f" class="bg-white p-3 pl-7 rounded-lg w-80 flex flex-col m-[1px]" @click.stop>
+          <div>{{ f }}</div>
         </div>
       </div>
     </transition>
@@ -113,11 +131,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted} from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, watch} from 'vue'
+import { useRouter} from 'vue-router'
 import defaultPhoto from "@/assets/defaultPhoto.png"
 
 const router=useRouter()
+
+// route parametreleri props ile geliyor
+const props = defineProps({
+  username: { type: String, required: false } // route paramı gelmezse localStorage fallback'i olacak
+})
+// route paramı yoksa localStorage'tan al, yoksa boş string
+const username = ref(props.username || localStorage.getItem('username') || '')
+
+
 
 const showModal = ref(false)
 const showEditModal = ref(false)
@@ -127,16 +154,21 @@ const editingBook = ref({})
 const firstname = ref('')
 const lastname = ref('')
 const bio = ref('')
-const username = ref('')
 const books = ref([])
 const photo = ref(defaultPhoto)
+
 const followersCount=ref(0)
 const followingCount=ref(0)
+const showFollowers=ref(false)
+const showFollowing=ref(false)
+const followers = ref([])
+const following = ref([])
+
+
 
 
 //profil fetchleme
 const fetchProfile = async () => {
-  username.value = localStorage.getItem('username') || ''
   if (!username.value) {
   console.error('Username bulunamadı')
   return
@@ -214,7 +246,10 @@ const fetchBooks = async () => {
 
 // Kitap ekleme
 const addBook = async () => {
-  if (!username.value) return console.error("Username yok, kitap eklenemiyor")
+  if (username.value!== localStorage.getItem('username')){
+    console.error('sadece kendi profiline kitap ekleyebilirsin.')
+    return
+  }
 
   const newBook = { title: 'New Book', description: 'Book Description', username: username.value }
   try {
@@ -231,6 +266,10 @@ const addBook = async () => {
 
 // Kitap silme
 const deleteBook = async (id) => {
+  if(username!==localStorage.getItem('username')){
+    console.error('sadece kendi profiline ait kitapları silebilirsin')
+    return
+  }
   const onay = confirm("Bu kitabı silmek istediğine emin misin?")
   if (!onay) return
   await fetch('http://localhost:8000/api/deleteBook', {
@@ -243,6 +282,10 @@ const deleteBook = async (id) => {
 
 // Kitap editleme
 const openEditBook = (book) => {
+    if (username.value !== localStorage.getItem('username')) {
+    console.error("Sadece kendi profiline ait kitapları düzenleyebilirsin")
+    return
+  }
   editingBook.value = { ...book}
   showEditBook.value = true
 }
@@ -266,20 +309,15 @@ const saveEditedBook = async () => {
 
 
 const addBookImage = (event, book) => {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'image/*'
-  input.onchange = e => {
-    const file = e.target.files[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = e => {
-      book.image = e.target.result
-    }
-    reader.readAsDataURL(file)
+  const file = event.target.files[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = e => {
+    book.image = e.target.result
   }
-  input.click()
+  reader.readAsDataURL(file)
 }
+
 
 const fetchFollowers=async()=>{
     try {
@@ -294,13 +332,55 @@ const fetchFollowers=async()=>{
   }
 }
 
+const fetchFollowersList=async()=>{
+    try {
+    const res = await fetch(`http://localhost:8000/api/getFollowersList?username=${username.value}`)
+    const data = await res.json()
+    if(res.ok){
+      followers.value=data
+    }
+  } catch (err) {
+    console.error('Takipçi isimleri çekilemedi:', err)
+  }
+}
+const fetchFollowingList=async()=>{
+    try {
+    const res = await fetch(`http://localhost:8000/api/getFollowingList?username=${username.value}`)
+    const data = await res.json()
+    if(res.ok){
+      following.value=data
+    }
+  } catch (err) {
+    console.error('Takip ettiklerimin isimleri çekilemedi:', err)
+  }
+}
+
+
+//bu kod her route param (props.username) değiştiğinde tetikleniyor.
+//yeni kullanıcı adını username değişkenine atıyor
+//bütün fetch fonksiyonlarını yeniden çalıştırıyor (profil bilgisi, kitaplar, takipçiler vs güncelleniyor)
+watch(() => props.username, (newUser) => {
+  username.value = newUser || localStorage.getItem('username') || ''
+  fetchProfile()
+  fetchBooks()
+  fetchFollowers()
+  fetchFollowersList()
+  fetchFollowingList()
+})
+
+
+
+
 
 
 onMounted(() => {
   fetchProfile()
   fetchBooks()
   fetchFollowers()
+  fetchFollowersList()
+  fetchFollowingList()
 })
+
 
 
  const goMainPg=()=>{

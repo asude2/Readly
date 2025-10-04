@@ -83,6 +83,7 @@ func initDB() {
 
 
 	log.Println("Veritabanı başarıyla hazırlandı.")
+
 }
 
 // --- Yardımcı Fonksiyonlar ---
@@ -364,8 +365,9 @@ func getFollowersHandler(w http.ResponseWriter, r *http.Request) {
     username := r.URL.Query().Get("username")
     var followersCount, followingCount int
 
-    db.QueryRow("SELECT COUNT(*) FROM follow WHERE following = ?", username).Scan(&followersCount)
-    db.QueryRow("SELECT COUNT(*) FROM follow WHERE follower = ?", username).Scan(&followingCount)
+	db.QueryRow("SELECT COUNT(*) FROM follow WHERE following = ? AND follower != ?", username, username).Scan(&followersCount)
+	db.QueryRow("SELECT COUNT(*) FROM follow WHERE follower = ? AND following != ?", username, username).Scan(&followingCount)
+
 
     respondJSON(w, http.StatusOK, map[string]int{
         "followers": followersCount,
@@ -395,6 +397,55 @@ func getAllBooksHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 
+func getFollowersListHandler(w http.ResponseWriter, r *http.Request) {
+    username := r.URL.Query().Get("username")
+
+    rows, err := db.Query(`
+        SELECT f.follower 
+        FROM follow f
+        WHERE f.following = ?`, username)
+    if err != nil {
+        http.Error(w, err.Error(), 500)
+        return
+    }
+    defer rows.Close()
+
+    var followers []string
+    for rows.Next() {
+        var uname string
+        if err := rows.Scan(&uname); err != nil {
+            http.Error(w, err.Error(), 500)
+            return
+        }
+        followers = append(followers, uname)
+    }
+    respondJSON(w, 200, followers)
+}
+
+func getFollowingListHandler(w http.ResponseWriter, r *http.Request) {
+    username := r.URL.Query().Get("username")
+
+    rows, err := db.Query(`
+        SELECT f.following 
+        FROM follow f
+        WHERE f.follower = ?`, username)
+    if err != nil {
+        http.Error(w, err.Error(), 500)
+        return
+    }
+    defer rows.Close()
+
+    var following []string
+    for rows.Next() {
+        var uname string
+        if err := rows.Scan(&uname); err != nil {
+            http.Error(w, err.Error(), 500)
+            return
+        }
+        following = append(following, uname)
+    }
+    respondJSON(w, 200, following)
+}
 
 
 func main() {
@@ -413,6 +464,9 @@ func main() {
 	http.Handle("/api/findUsers", enableCORS(http.HandlerFunc(findUsersHandler)))
 	http.Handle("/api/followUser", enableCORS(http.HandlerFunc(followUserHandler)))
 	http.Handle("/api/getFollowers", enableCORS(http.HandlerFunc(getFollowersHandler)))
+	http.Handle("/api/getFollowersList", enableCORS(http.HandlerFunc(getFollowersListHandler)))
+	http.Handle("/api/getFollowingList", enableCORS(http.HandlerFunc(getFollowingListHandler)))
+
 
 	http.Handle("/api/getAllBooks", enableCORS(http.HandlerFunc(getAllBooksHandler)))
 
@@ -422,9 +476,11 @@ func main() {
 	port := ":8000"
 	log.Printf("Go API sunucusu http://localhost%s adresinde dinlemede...", port)
 	log.Fatal(http.ListenAndServe(port, nil))
+
 }
 
 
+//bu kodu hata çıktığı için ekliyorum
 func debugBooksColumnsHandler(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query("PRAGMA table_info(books)")
 	if err != nil {

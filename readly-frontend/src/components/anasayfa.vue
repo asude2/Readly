@@ -53,12 +53,14 @@
           <div @click.prevent="goToProfile" class="pt-3">
             <i class="fa-solid fa-circle-user p-3 text-3xl flex cursor-pointer"><p class="px-1 text-2xl">profil</p></i>
           </div>
+
+
         </div>
 
         <!--------------------------------------------CONTENT KISMI-------------------------------------------------------------------->
         <div class="flex-column justify-center items-start min-h-screen m-10">
           <div v-for="book in filteredBooks" :key="book.id" class="rounded-2xl shadow-lg bg-gray-200 p-6 transition-all duration-300 w-[90%] relative justify-center m-10 ">
-            <p class="font-bold text-xl ml-5 mb-8 mt-2 bg-white px-4 py-2 inline-block border rounded-[10px]">{{ book.username }}</p>
+            <p @click="goUsersProfile(book.username)" class="font-bold text-xl ml-5 mb-8 mt-2 bg-white px-4 py-1 inline-block border rounded-[10px] cursor-pointer">{{ book.username }}</p>
             <img class="w-[20%] h-40 m-5 object-cover  rounded-[5px]" alt="book image" :src="book.image" />
             <div class="px-4 py-4 overflow-hidden">
               <h2 class="text-xl font-bold mb-2">{{book.title}}</h2>
@@ -77,12 +79,22 @@ import { ref, onMounted, computed} from 'vue'
 import { useRouter } from 'vue-router'
 
 const router=useRouter()
-const goToProfile=()=>{
-  router.push('/profil')
-}
+
+
 const goLoginPg=()=>{
   router.push('/')
 }
+
+const goToProfile=()=>{
+  router.push(`/profil/${username.value}`)
+}
+
+const goUsersProfile = (user) => {
+  router.push({ name: 'Profile', params: { username: user } })
+}
+
+
+
 
 const firstname = ref('')
 const lastname = ref('')
@@ -130,10 +142,7 @@ const searchUsers=async()=>{
       users.value=data
     }
     else console.error('Kullanıcı bulunamadı:',data.error)
-
-
   }
-
   catch (err){console.error('Kullanıcı arama hatası:', err)}
 }
 
@@ -150,7 +159,6 @@ const follow = async (targetUsername, isFollowing) => {
         action
       })
     })
-
     const data = await res.json()
     if (res.ok) {
       searchUsers()
@@ -180,6 +188,7 @@ const fetchAllBooks= async () => {
   }
   catch (err) { console.error('Kitap fetch hatası:', err) }
 }
+
 
 
 

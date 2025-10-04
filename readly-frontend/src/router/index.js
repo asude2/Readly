@@ -4,11 +4,13 @@ import Register from '../components/signupPage.vue'
 import Anasayfa from '../components/anasayfa.vue'
 import Profil from '../components/profil.vue'
 
+
+
 const routes = [
   {path: '/', name: 'Login', component: Login },
   {path: '/register', name: 'Register', component: Register },
   {path: '/anasayfa', name: 'Anasayfa', component:Anasayfa},
-  {path: '/profil', name:'Profil', component:Profil}
+  {path: '/profil/:username', name:'profil', component: Profil, props:true},
 ]
 
 const router = createRouter({
@@ -17,3 +19,5 @@ const router = createRouter({
 })
 
 export default router
+
+
