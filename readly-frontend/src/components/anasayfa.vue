@@ -89,8 +89,9 @@ const goToProfile=()=>{
   router.push(`/profil/${username.value}`)
 }
 
-const goUsersProfile = (user) => {
-  router.push({ name: 'Profile', params: { username: user } })
+//bunu profil.vue ya yönlendirdik gibi bir şey.. route'a /profil/asuderk gibi gidiyor
+const goUsersProfile=(user) => {
+  router.push({ name: 'profil', params: { username: user } })
 }
 
 

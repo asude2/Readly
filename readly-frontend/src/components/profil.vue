@@ -14,8 +14,8 @@
       <div>
         <img v-if="photo" :src="photo" @click="showModal=true" class="w-[11rem] h-[11rem] rounded-full object-cover mt-2 cursor-pointer border border-gray-400"  alt="profilePhoto" />
       </div>
-      <div v-if="username === localStorage.getItem('username')" class="flex flex-col cursor-pointer mt-5">
-        <i @click="addBook" class="fa-solid fa-plus bg-gray-300 text-gray-800 py-5 pl-9 rounded-full hover:bg-gray-400 transition">Add Book</i>
+      <div  class="flex flex-col cursor-pointer mt-5">
+        <i v-show="isOwner" @click="addBook" class="fa-solid fa-plus bg-gray-300 text-gray-800 py-5 pl-9 rounded-full hover:bg-gray-400 transition">Add Book</i>
       </div>
     </div>
 
@@ -23,9 +23,9 @@
     <div class="w-72">
       <div class="flex gap-10 items-center">
         <h1 class="username text-2xl font-semibold">{{ username }}</h1>
-        <div v-if="username === localStorage.getItem('username')" class="flex items-center gap-2">
-          <button class="bg-black text-white font-medium rounded-[15px] px-4 py-1 hover:bg-gray-800" @click="showEditModal = true">Edit Profile</button>
-          <i class="fa-solid fa-gear text-xl cursor-pointer"></i>
+        <div  class="flex items-center gap-2">
+          <button v-show="isOwner" class="bg-black text-white font-medium rounded-[15px] px-4 py-1 hover:bg-gray-800" @click="showEditModal = true">Edit Profile</button>
+          <i v-show="isOwner" class="fa-solid fa-gear text-xl cursor-pointer"></i>
         </div>
       </div>
       <div class="flex gap-12 pt-2">
@@ -61,7 +61,7 @@
               <p class="pl-1">Profile Photo</p>
           </div>
           <input type="file" accept="image/*" @change="addProfilePhoto" class="pb-4"> <!--accept:sadece resim formatındaki dosyaların seçilmesine izin verir.-->
-          <button v-if="username===localStorage.getItem('username')" @click="removePP" class="bg-gray-200 border border-gray-600 px-1 py-[2px] rounded-[2px] mb-4">remove photo</button>
+          <button  @click="removePP" class="bg-gray-200 border border-gray-600 px-1 py-[2px] rounded-[2px] mb-4">remove photo</button>
           <label class="block mb-2 font-medium">Biography</label>
           <textarea v-model="bio" class="w-full border border-gray-300 rounded px-2 py-1 mb-4"></textarea>
           <label class="block mb-2 font-medium">First Name</label>
@@ -103,8 +103,8 @@
         <h2 class="text-xl font-bold mb-2">{{ book.title }}</h2>
         <p class="text-gray-600 text-sm mb-4" :style="book.expanded ? 'max-height:none' : 'max-height:4rem; overflow:hidden;'">{{ book.description }}</p>
         <button class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg" @click="book.expanded = !book.expanded">{{ book.expanded ? 'Show Less' : 'Read More' }}</button>
-        <button @click="openEditBook(book)" class="bg-gray-300 hover:bg-gray-400 font-semibold py-2 px-4 rounded-lg ml-2">Edit</button>
-        <button @click="deleteBook(book.id)" class="border border-black rounded-[5px] mt-3 px-[70px] py-1 font-semibold hover:bg-gray-100">Delete</button>
+        <button v-show="isOwner" @click="openEditBook(book)" class="bg-gray-300 hover:bg-gray-400 font-semibold py-2 px-4 rounded-lg ml-2">Edit</button>
+        <button v-show="isOwner" @click="deleteBook(book.id)" class="border border-black rounded-[5px] mt-3 px-[70px] py-1 font-semibold hover:bg-gray-100">Delete</button>
       </div>
     </div>
   </div>
@@ -131,7 +131,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch} from 'vue'
+import { ref, onMounted, watch, computed} from 'vue'
 import { useRouter} from 'vue-router'
 import defaultPhoto from "@/assets/defaultPhoto.png"
 
@@ -207,6 +207,7 @@ const saveProfile = async () => {
   }
 }
 
+//photo işlemleri
 const addProfilePhoto = (event) => {
   const file = event.target.files[0]
   if (!file) return
@@ -217,7 +218,6 @@ const addProfilePhoto = (event) => {
   }
   reader.readAsDataURL(file)
 }
-
 const removePP=()=>{
   const onay=confirm("Profil Fotoğrafınızı silmek istediğinizden emin misiniz?")
   if(!onay){return}
@@ -246,11 +246,6 @@ const fetchBooks = async () => {
 
 // Kitap ekleme
 const addBook = async () => {
-  if (username.value!== localStorage.getItem('username')){
-    console.error('sadece kendi profiline kitap ekleyebilirsin.')
-    return
-  }
-
   const newBook = { title: 'New Book', description: 'Book Description', username: username.value }
   try {
     const res = await fetch('http://localhost:8000/api/addBook', {
@@ -266,10 +261,6 @@ const addBook = async () => {
 
 // Kitap silme
 const deleteBook = async (id) => {
-  if(username!==localStorage.getItem('username')){
-    console.error('sadece kendi profiline ait kitapları silebilirsin')
-    return
-  }
   const onay = confirm("Bu kitabı silmek istediğine emin misin?")
   if (!onay) return
   await fetch('http://localhost:8000/api/deleteBook', {
@@ -282,13 +273,10 @@ const deleteBook = async (id) => {
 
 // Kitap editleme
 const openEditBook = (book) => {
-    if (username.value !== localStorage.getItem('username')) {
-    console.error("Sadece kendi profiline ait kitapları düzenleyebilirsin")
-    return
-  }
   editingBook.value = { ...book}
   showEditBook.value = true
 }
+
 
 // Kitap düzenlemeyi kaydet
 const saveEditedBook = async () => {
@@ -367,6 +355,10 @@ watch(() => props.username, (newUser) => {
   fetchFollowersList()
   fetchFollowingList()
 })
+
+// computed owner flag
+const isOwner = computed(() => username.value && username.value === localStorage.getItem('username'))
+
 
 
 

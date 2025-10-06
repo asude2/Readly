@@ -12,6 +12,8 @@ const routes = [
   {path: '/anasayfa', name: 'Anasayfa', component:Anasayfa},
   {path: '/profil/:username', name:'profil', component: Profil, props:true},
 ]
+//props:true => bunu yazmazsan Profil bileşeninde "this.$route.params.username" diyerek usernamei almam gerekir.
+//yazdığımız için Profil.vue içinde doğrudan props:['username'] diyerek username değerine kolayca erişebilirim.
 
 const router = createRouter({
   history: createWebHistory(),
