@@ -35,11 +35,11 @@
             <!--okur arama çubuğu-->
             <div v-if="okurGör" class="flex items-center border border-gray-300 rounded-full px-3 my-4 w-full">
                 <i class="fa-solid fa-magnifying-glass text-gray-500"></i>
-                <input v-model="searchQuery" type="text" placeholder="kullanıcı ara.." class="w-full px-2 py-1 outline-none rounded-full"/>
+                <input @keyup.enter="searchUsers" v-model="searchQuery" type="text" placeholder="kullanıcı ara.." class="w-full px-2 py-1 outline-none rounded-full"/>
                 <button @click="searchUsers" class="bg-gray-200 rounded-[20px] hover:bg-gray-300 px-3 cursor-pointer">ARA</button>
             </div>
             <div v-if="okurGör" v-for="user in users.filter(u=>u.username!==username)" :key="user.username" class="flex bg-gray-200 justify-between items-center border rounded-[20px] py-2 m-2 cursor-pointer border-gray-300 ">
-                <p class="font-semibold mx-6">{{user.username}} {{ user.firstName }}{{ user.lastName }}</p>
+                <p @click="goUsersProfile(user.username)" class="font-semibold mx-6">{{user.username}} {{ user.firstName }}{{ user.lastName }}</p>
                 <button @click="follow(user.username, user.isFollowing)" class="bg-black text-white border rounded-[10px] px-2 py-[2px] font-light text-[15px] hover:bg-gray-700 mx-6">{{ user.isFollowing ? 'Takipten Çık' : 'Takip Et' }}</button>
             </div>
             <!--kitap yorumu arama çubuğu-->
