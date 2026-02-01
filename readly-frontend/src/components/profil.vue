@@ -24,10 +24,13 @@
       <div class="flex gap-10 items-center">
         <h1 class="username text-2xl font-semibold">{{ username }}</h1>
         <div  class="flex items-center gap-2">
-          <button v-show="isOwner" class="bg-black text-white font-medium rounded-[15px] px-4 py-1 hover:bg-gray-800" @click="showEditModal = true">Edit Profile</button>
-          <i v-show="isOwner" class="fa-solid fa-gear text-xl cursor-pointer"></i>
+          <button v-show="isOwner" class="bg-red-600 text-white font-small rounded-[15px] px-4 py-1 hover:bg-red-700" @click="showEditModal = true">Edit Profile</button>
+          <i v-show="isOwner" class="fa-solid fa-gear text-red-700 text-xl cursor-pointer"></i>
         </div>
       </div>
+        <div>
+            <p v-if="!isOwner" @click="toggleFollow" class="takipEt font-semibold text-sm bg-red-700 text-white border border-red-700 rounded-md px-5 py-1 cursor-pointer max-w-max">{{ isFollowing ? 'Takipten Çık' : 'Takip Et' }}</p>
+        </div>
       <div class="flex gap-12 pt-2">
         <div @click="showFollowers=true" class="flex cursor-pointer">
             <p class="font-bold text-[18px]">{{ followersCount }}&nbsp;</p>
@@ -163,6 +166,7 @@ const showFollowers=ref(false)
 const showFollowing=ref(false)
 const followers = ref([])
 const following = ref([])
+const isFollowing = ref(false)
 
 
 
@@ -180,6 +184,7 @@ const fetchProfile = async () => {
       firstname.value=data.firstname || ""
       lastname.value=data.lastname || ""
       bio.value = data.bio || ''
+      photo.value = data.photo || defaultPhoto;
     } else { console.error('Profil Bulunamadı:',data.error) }
   } catch (err) { console.error('Profil fetch hatası:', err) }
 }
@@ -192,12 +197,11 @@ const saveProfile = async () => {
       firstname: firstname.value,
       lastname: lastname.value,
       bio: bio.value,
+      photo: photo.value,
     };
     await fetch("http://localhost:8000/api/updateProfile", {
       method: "PUT",
-      headers:{
-          "Content-Type": "application/json",
-      },
+      headers:{"Content-Type": "application/json",},
       body: JSON.stringify(updatedProfile)
     });
     showEditModal.value=false;
@@ -208,29 +212,50 @@ const saveProfile = async () => {
 }
 
 //photo işlemleri
-const addProfilePhoto = (event) => {
+const addProfilePhoto = async (event) => {
   const file = event.target.files[0]
   if (!file) return
-  const reader = new FileReader()
-  reader.onload = e => {
-    photo.value = e.target.result
-    localStorage.setItem(`profilePhoto_${username.value}`, e.target.result)
+  try {
+    const formData = new FormData()
+    formData.append('username', username.value)
+    formData.append('photo', file)
+
+    const res = await fetch('http://localhost:8000/api/uploadProfilePhoto', {
+      method: 'POST',
+      body: formData,
+    })
+    const data = await res.json()
+    if (res.ok) {
+      photo.value = data.photo || defaultPhoto
+      await fetchProfile()
+    } else {
+      console.error('Photo upload failed:', data.error)
+    }
+  } catch (err) {
+    console.error('Photo upload error:', err)
   }
-  reader.readAsDataURL(file)
 }
-const removePP=()=>{
-  const onay=confirm("Profil Fotoğrafınızı silmek istediğinizden emin misiniz?")
-  if(!onay){return}
-  photo.value=defaultPhoto
-  localStorage.removeItem(`profilePhoto_${username.value}`)
+const removePP = async () => {
+  const onay = confirm("Profil Fotoğrafınızı silmek istediğinizden emin misiniz?")
+  if (!onay) return
+  try {
+    const res = await fetch('http://localhost:8000/api/removeProfilePhoto', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: username.value }),
+    })
+    if (res.ok) {
+      photo.value = defaultPhoto
+      await fetchProfile()
+    } else {
+      const data = await res.json()
+      console.error('Remove photo failed:', data.error)
+    }
+  } catch (err) {
+    console.error('Remove photo error:', err)
+  }
 }
-const savedPhoto = localStorage.getItem(`profilePhoto_${localStorage.getItem("username")}`)
-if (savedPhoto) {
-  photo.value = savedPhoto
-}
-else{
-  photo.value=defaultPhoto
-}
+// Photo is loaded from backend in fetchProfile(); no localStorage fallback used anymore.
 
 
 //kitap fetchleme
@@ -329,6 +354,45 @@ const fetchFollowersList=async()=>{
     }
   } catch (err) {
     console.error('Takipçi isimleri çekilemedi:', err)
+  }
+}
+const fetchIsFollowing = async () => {
+  try {
+    const res = await fetch(`http://localhost:8000/api/getFollowersList?username=${username.value}`)
+    const data = await res.json()
+    const me = localStorage.getItem('username') || ''
+    if (res.ok && Array.isArray(data)) {
+      isFollowing.value = data.includes(me)
+    } else {
+      isFollowing.value = false
+    }
+  } catch (err) {
+    console.error('isFollowing fetch hata:', err)
+    isFollowing.value = false
+  }
+}
+
+const toggleFollow = async () => {
+  try {
+    const me = localStorage.getItem('username') || ''
+    if (!me) { alert('Önce giriş yapmalısınız'); return }
+    const action = isFollowing.value ? 'unfollow' : 'follow'
+    const res = await fetch('http://localhost:8000/api/followUser', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ follower: me, following: username.value, action })
+    })
+    if (res.ok) {
+      // refresh follower counts and state
+      await fetchFollowers()
+      await fetchFollowersList()
+      await fetchIsFollowing()
+    } else {
+      const d = await res.json().catch(()=>({}))
+      console.error('follow request failed', d)
+    }
+  } catch (err) {
+    console.error('toggleFollow error:', err)
   }
 }
 const fetchFollowingList=async()=>{

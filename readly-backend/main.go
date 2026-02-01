@@ -2,9 +2,12 @@ package main
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
+
 	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
 )
@@ -18,6 +21,7 @@ type User struct {
 	DOB       string `json:"dob"`
 	Gender    string `json:"gender"`
 	Bio       string `json:"bio"`
+	Photo     string `json:"photo"`
 }
 type Book struct {
 	ID          int    `json:"id"`
@@ -45,7 +49,8 @@ func initDB() {
 		"password" TEXT,
 		"dob" TEXT,
 		"gender" TEXT,
-		"bio" TEXT
+		"bio" TEXT,
+		"photo" TEXT
 	);`
 	_, err = db.Exec(createUsersTable)
 	if err != nil {
@@ -70,7 +75,7 @@ func initDB() {
 		log.Println("Books tablosuna username eklenemedi (muhtemelen zaten var):", err)
 	}
 
-	createFollowTable:= `CREATE TABLE IF NOT EXISTS follow (
+	createFollowTable := `CREATE TABLE IF NOT EXISTS follow (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		follower TEXT NOT NULL,
 		following TEXT NOT NULL,
@@ -80,8 +85,8 @@ func initDB() {
 	if err != nil {
 		log.Fatal("Follow tablosunu oluşturma hatası:", err)
 	}
-
-
+	// initDB fonksiyonunun en altına, log.Println'dan önce ekleyebilirsin:
+	_, _ = db.Exec(`ALTER TABLE users ADD COLUMN photo TEXT`)
 	log.Println("Veritabanı başarıyla hazırlandı.")
 
 }
@@ -176,10 +181,9 @@ func profileHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Requested username:", username)
 
 	var user User
-	err := db.QueryRow(`SELECT firstname, lastname, username, dob, gender, bio FROM users WHERE username=?`, username).
-		Scan(&user.FirstName, &user.LastName, &user.Username, &user.DOB, &user.Gender, &user.Bio)
+	err := db.QueryRow(`SELECT firstname, lastname, username, dob, gender, bio, photo FROM users WHERE username=?`, username).
+		Scan(&user.FirstName, &user.LastName, &user.Username, &user.DOB, &user.Gender, &user.Bio, &user.Photo)
 	if err != nil {
-		log.Println("DB fetch error:", err)
 		respondJSON(w, http.StatusNotFound, map[string]string{"error": "Kullanıcı bulunamadı"})
 		return
 	}
@@ -203,8 +207,8 @@ func updateProfileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_, err := db.Exec(
-		"UPDATE users SET firstname = ?, lastname = ?, bio = ? WHERE username = ?",
-		user.FirstName, user.LastName, user.Bio, user.Username,
+		"UPDATE users SET firstname = ?, lastname = ?, bio = ?, photo = ? WHERE username = ?",
+		user.FirstName, user.LastName, user.Bio, user.Photo, user.Username,
 	)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -309,144 +313,203 @@ func updateBookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func findUsersHandler(w http.ResponseWriter, r *http.Request) {
-    query := r.URL.Query().Get("q")
-    currentUser := r.URL.Query().Get("current") 
+	query := r.URL.Query().Get("q")
+	currentUser := r.URL.Query().Get("current")
 
-    rows, err := db.Query(`SELECT username, firstname FROM users WHERE username LIKE ?`, "%"+query+"%")
-    if err != nil {
-        respondJSON(w, http.StatusInternalServerError, map[string]string{"error":"DB error"})
-        return
-    }
-    defer rows.Close()
+	rows, err := db.Query(`SELECT username, firstname FROM users WHERE username LIKE ?`, "%"+query+"%")
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, map[string]string{"error": "DB error"})
+		return
+	}
+	defer rows.Close()
 
-    var users []map[string]interface{}
-    for rows.Next() {
-        var username, firstname string
-        rows.Scan(&username, &firstname)
-        var count int
-        db.QueryRow(`SELECT COUNT(*) FROM follow WHERE follower=? AND following=?`, currentUser, username).Scan(&count)
+	var users []map[string]interface{}
+	for rows.Next() {
+		var username, firstname string
+		rows.Scan(&username, &firstname)
+		var count int
+		db.QueryRow(`SELECT COUNT(*) FROM follow WHERE follower=? AND following=?`, currentUser, username).Scan(&count)
 
-        users = append(users, map[string]interface{}{
-            "username": username,
-            "firstname": firstname,
-            "isFollowing": count > 0,
-        })
-    }
-    respondJSON(w, http.StatusOK, users)
+		users = append(users, map[string]interface{}{
+			"username":    username,
+			"firstname":   firstname,
+			"isFollowing": count > 0,
+		})
+	}
+	respondJSON(w, http.StatusOK, users)
 }
-
 
 func followUserHandler(w http.ResponseWriter, r *http.Request) {
-    var req struct{
-        Follower string `json:"follower"`
-        Following string `json:"following"`
-        Action string `json:"action"`
-    }
-    json.NewDecoder(r.Body).Decode(&req)
+	var req struct {
+		Follower  string `json:"follower"`
+		Following string `json:"following"`
+		Action    string `json:"action"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
 
-    if req.Action == "follow" {
-        _, err := db.Exec(`INSERT OR IGNORE INTO follow(follower, following) VALUES(?,?)`, req.Follower, req.Following)
-        if err != nil {
-            respondJSON(w, 500, map[string]string{"error":"DB error"})
-            return
-        }
-    } else {
-        _, err := db.Exec(`DELETE FROM follow WHERE follower=? AND following=?`, req.Follower, req.Following)
-        if err != nil {
-            respondJSON(w, 500, map[string]string{"error":"DB error"})
-            return
-        }
-    }
-    respondJSON(w, 200, map[string]string{"message":"success"})
+	if req.Action == "follow" {
+		_, err := db.Exec(`INSERT OR IGNORE INTO follow(follower, following) VALUES(?,?)`, req.Follower, req.Following)
+		if err != nil {
+			respondJSON(w, 500, map[string]string{"error": "DB error"})
+			return
+		}
+	} else {
+		_, err := db.Exec(`DELETE FROM follow WHERE follower=? AND following=?`, req.Follower, req.Following)
+		if err != nil {
+			respondJSON(w, 500, map[string]string{"error": "DB error"})
+			return
+		}
+	}
+	respondJSON(w, 200, map[string]string{"message": "success"})
 }
 
-
 func getFollowersHandler(w http.ResponseWriter, r *http.Request) {
-    username := r.URL.Query().Get("username")
-    var followersCount, followingCount int
+	username := r.URL.Query().Get("username")
+	var followersCount, followingCount int
 
 	db.QueryRow("SELECT COUNT(*) FROM follow WHERE following = ? AND follower != ?", username, username).Scan(&followersCount)
 	db.QueryRow("SELECT COUNT(*) FROM follow WHERE follower = ? AND following != ?", username, username).Scan(&followingCount)
 
-
-    respondJSON(w, http.StatusOK, map[string]int{
-        "followers": followersCount,
-        "following": followingCount,
-    })
+	respondJSON(w, http.StatusOK, map[string]int{
+		"followers": followersCount,
+		"following": followingCount,
+	})
 }
-
 
 func getAllBooksHandler(w http.ResponseWriter, r *http.Request) {
-    rows, err := db.Query("SELECT id, title, description, image, username FROM books")
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
-    defer rows.Close()
+	rows, err := db.Query("SELECT id, title, description, image, username FROM books")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
 
-    var books []Book
-    for rows.Next() {
-        var b Book
-        if err := rows.Scan(&b.ID, &b.Title, &b.Description, &b.Image, &b.Username); err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
-        books = append(books, b)
-    }
-    respondJSON(w, http.StatusOK, books)
+	var books []Book
+	for rows.Next() {
+		var b Book
+		if err := rows.Scan(&b.ID, &b.Title, &b.Description, &b.Image, &b.Username); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		books = append(books, b)
+	}
+	respondJSON(w, http.StatusOK, books)
 }
 
-
 func getFollowersListHandler(w http.ResponseWriter, r *http.Request) {
-    username := r.URL.Query().Get("username")
+	username := r.URL.Query().Get("username")
 
-    rows, err := db.Query(`
+	rows, err := db.Query(`
         SELECT f.follower 
         FROM follow f
         WHERE f.following = ?`, username)
-    if err != nil {
-        http.Error(w, err.Error(), 500)
-        return
-    }
-    defer rows.Close()
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	defer rows.Close()
 
-    var followers []string
-    for rows.Next() {
-        var uname string
-        if err := rows.Scan(&uname); err != nil {
-            http.Error(w, err.Error(), 500)
-            return
-        }
-        followers = append(followers, uname)
-    }
-    respondJSON(w, 200, followers)
+	var followers []string
+	for rows.Next() {
+		var uname string
+		if err := rows.Scan(&uname); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		followers = append(followers, uname)
+	}
+	respondJSON(w, 200, followers)
 }
 
 func getFollowingListHandler(w http.ResponseWriter, r *http.Request) {
-    username := r.URL.Query().Get("username")
+	username := r.URL.Query().Get("username")
 
-    rows, err := db.Query(`
+	rows, err := db.Query(`
         SELECT f.following 
         FROM follow f
         WHERE f.follower = ?`, username)
-    if err != nil {
-        http.Error(w, err.Error(), 500)
-        return
-    }
-    defer rows.Close()
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	defer rows.Close()
 
-    var following []string
-    for rows.Next() {
-        var uname string
-        if err := rows.Scan(&uname); err != nil {
-            http.Error(w, err.Error(), 500)
-            return
-        }
-        following = append(following, uname)
-    }
-    respondJSON(w, 200, following)
+	var following []string
+	for rows.Next() {
+		var uname string
+		if err := rows.Scan(&uname); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		following = append(following, uname)
+	}
+	respondJSON(w, 200, following)
 }
 
+// uploadProfilePhotoHandler accepts multipart/form-data with fields "username" and file "photo".
+// It stores the image as a data URL (data:<mime>;base64,...) in the users.photo column.
+func uploadProfilePhotoHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "only POST allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// limit parsed form size
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		http.Error(w, "failed to parse multipart form", http.StatusBadRequest)
+		return
+	}
+
+	username := r.FormValue("username")
+	file, _, err := r.FormFile("photo")
+	if err != nil {
+		http.Error(w, "missing photo file", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, "failed to read file", http.StatusInternalServerError)
+		return
+	}
+
+	// detect content type
+	contentType := http.DetectContentType(data)
+	encoded := base64.StdEncoding.EncodeToString(data)
+	dataURL := "data:" + contentType + ";base64," + encoded
+
+	_, err = db.Exec("UPDATE users SET photo = ? WHERE username = ?", dataURL, username)
+	if err != nil {
+		http.Error(w, "failed to save photo", http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]string{"photo": dataURL})
+}
+
+// removeProfilePhotoHandler clears the photo field for the given username.
+func removeProfilePhotoHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "only POST allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Username string `json:"username"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+
+	_, err := db.Exec("UPDATE users SET photo = '' WHERE username = ?", req.Username)
+	if err != nil {
+		http.Error(w, "failed to remove photo", http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]string{"message": "photo removed"})
+}
 
 func main() {
 	initDB()
@@ -455,6 +518,10 @@ func main() {
 	http.Handle("/api/login", enableCORS(http.HandlerFunc(loginHandler)))
 	http.Handle("/api/profile", enableCORS(http.HandlerFunc(profileHandler)))
 	http.Handle("/api/updateProfile", enableCORS(http.HandlerFunc(updateProfileHandler)))
+
+	// profile photo endpoints
+	http.Handle("/api/uploadProfilePhoto", enableCORS(http.HandlerFunc(uploadProfilePhotoHandler)))
+	http.Handle("/api/removeProfilePhoto", enableCORS(http.HandlerFunc(removeProfilePhotoHandler)))
 
 	http.Handle("/api/addBook", enableCORS(http.HandlerFunc(addBookHandler)))
 	http.Handle("/api/getBooks", enableCORS(http.HandlerFunc(getBooksHandler)))
@@ -467,11 +534,9 @@ func main() {
 	http.Handle("/api/getFollowersList", enableCORS(http.HandlerFunc(getFollowersListHandler)))
 	http.Handle("/api/getFollowingList", enableCORS(http.HandlerFunc(getFollowingListHandler)))
 
-
 	http.Handle("/api/getAllBooks", enableCORS(http.HandlerFunc(getAllBooksHandler)))
 
 	http.Handle("/api/debugBooksColumns", enableCORS(http.HandlerFunc(debugBooksColumnsHandler)))
-
 
 	port := ":8000"
 	log.Printf("Go API sunucusu http://localhost%s adresinde dinlemede...", port)
@@ -479,8 +544,7 @@ func main() {
 
 }
 
-
-//bu kodu hata çıktığı için ekliyorum
+// bu kodu hata çıktığı için ekliyorum
 func debugBooksColumnsHandler(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query("PRAGMA table_info(books)")
 	if err != nil {
@@ -490,11 +554,11 @@ func debugBooksColumnsHandler(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	type Col struct {
-		Cid   int    `json:"cid"`
-		Name  string `json:"name"`
-		Type  string `json:"type"`
-		NotNull int `json:"notnull"`
-		Pk    int    `json:"pk"`
+		Cid     int    `json:"cid"`
+		Name    string `json:"name"`
+		Type    string `json:"type"`
+		NotNull int    `json:"notnull"`
+		Pk      int    `json:"pk"`
 	}
 
 	var cols []Col
