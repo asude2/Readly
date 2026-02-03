@@ -85,7 +85,7 @@ func initDB() {
 	if err != nil {
 		log.Fatal("Follow tablosunu oluşturma hatası:", err)
 	}
-	// initDB fonksiyonunun en altına, log.Println'dan önce ekleyebilirsin:
+	//photo sütunu yoksa ekle
 	_, _ = db.Exec(`ALTER TABLE users ADD COLUMN photo TEXT`)
 	log.Println("Veritabanı başarıyla hazırlandı.")
 
@@ -316,7 +316,7 @@ func findUsersHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
 	currentUser := r.URL.Query().Get("current")
 
-	rows, err := db.Query(`SELECT username, firstname FROM users WHERE username LIKE ?`, "%"+query+"%")
+	rows, err := db.Query(`SELECT username, firstname, photo FROM users WHERE username LIKE ?`, "%"+query+"%")
 	if err != nil {
 		respondJSON(w, http.StatusInternalServerError, map[string]string{"error": "DB error"})
 		return
@@ -325,14 +325,15 @@ func findUsersHandler(w http.ResponseWriter, r *http.Request) {
 
 	var users []map[string]interface{}
 	for rows.Next() {
-		var username, firstname string
-		rows.Scan(&username, &firstname)
+		var username, firstname, photo string
+		rows.Scan(&username, &firstname, &photo)
 		var count int
 		db.QueryRow(`SELECT COUNT(*) FROM follow WHERE follower=? AND following=?`, currentUser, username).Scan(&count)
 
 		users = append(users, map[string]interface{}{
 			"username":    username,
 			"firstname":   firstname,
+			"photo":   photo,
 			"isFollowing": count > 0,
 		})
 	}
@@ -377,22 +378,33 @@ func getFollowersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getAllBooksHandler(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT id, title, description, image, username FROM books")
+	query := `
+        SELECT b.id, b.title, b.description, b.image, b.username, COALESCE(u.photo, '')
+        FROM books b 
+        LEFT JOIN users u ON b.username = u.username`
+	rows, err := db.Query(query)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
-	var books []Book
+	var books []map[string]interface{}
 	for rows.Next() {
-		var b Book
-		if err := rows.Scan(&b.ID, &b.Title, &b.Description, &b.Image, &b.Username); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		books = append(books, b)
-	}
+        var id int
+        var title, description, image, username, userPhoto string
+        if err := rows.Scan(&id, &title, &description, &image, &username, &userPhoto); err != nil {
+            continue
+        }
+        books = append(books, map[string]interface{}{
+            "id":          id,
+            "title":       title,
+            "description": description,
+            "image":       image,
+            "username":    username,
+            "user_photo":  userPhoto, 
+        })
+    }
 	respondJSON(w, http.StatusOK, books)
 }
 

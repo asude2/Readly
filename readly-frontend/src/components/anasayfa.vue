@@ -39,7 +39,11 @@
                 <button @click="searchUsers" class="bg-gray-200 rounded-[20px] hover:bg-gray-300 px-3 cursor-pointer">ARA</button>
             </div>
             <div v-if="okurGör" v-for="user in users.filter(u=>u.username!==username)" :key="user.username" class="flex bg-gray-200 justify-between items-center border rounded-[20px] py-2 m-2 cursor-pointer border-gray-300 ">
-                <p @click="goUsersProfile(user.username)" class="font-semibold mx-6">{{user.username}} {{ user.firstName }}{{ user.lastName }}</p>
+                <div @click="goUsersProfile(user.username)" class="flex items-center font-semibold mx-6">
+                    <img v-if="user.photo" :src="user.photo" alt="profile photo" class="w-8 h-8 rounded-full mr-2 object-cover border border-gray-400">
+                    <i v-else class="fa-solid fa-circle-user text-2xl mr-2 text-gray-500"></i>
+                    <span>{{ user.username }}</span>
+                </div>
                 <button @click="follow(user.username, user.isFollowing)" class="bg-black text-white border rounded-[10px] px-2 py-[2px] font-light text-[15px] hover:bg-gray-700 mx-6">{{ user.isFollowing ? 'Takipten Çık' : 'Takip Et' }}</button>
             </div>
             <!--kitap yorumu arama çubuğu-->
@@ -60,7 +64,10 @@
         <!--------------------------------------------CONTENT KISMI-------------------------------------------------------------------->
         <div class="flex-column justify-center items-start min-h-screen m-10">
           <div v-for="book in filteredBooks" :key="book.id" class="rounded-2xl shadow-lg bg-gray-200 p-6 transition-all duration-300 w-[90%] relative justify-center m-10 ">
-            <p @click="goUsersProfile(book.username)" class="font-bold text-xl ml-5 mb-8 mt-2 bg-white px-4 py-1 inline-block border rounded-[10px] cursor-pointer">{{ book.username }}</p>
+            <p @click="goUsersProfile(book.username)" class="flex items-center cursor-pointer font-semibold text-l ml-5 mb-8 mt-2  px-4 py-1 inline-flex border bg-gray-200 hover:bg-gray-300 rounded-[10px] transition-colors">
+              <img v-if="book.user_photo" :src="book.user_photo" class="w-8 h-8 rounded-full mr-2 object-cover border border-white">
+              <i v-else class="fa-solid fa-circle-user text-sm mr-2"></i>{{ book.username }}
+            </p>
             <img class="w-[20%] h-40 m-5 object-cover  rounded-[5px]" alt="book image" :src="book.image" />
             <div class="px-4 py-4 overflow-hidden">
               <h2 class="text-xl font-bold mb-2">{{book.title}}</h2>
@@ -101,6 +108,7 @@ const firstname = ref('')
 const lastname = ref('')
 const username = ref('')
 const users = ref([])
+const profile=ref('')
 const searchQuery=ref('')
 const okurGör=ref(false)
 const kitapGör=ref(true)
@@ -129,6 +137,7 @@ const fetchProfile = async () => {
     if (res.ok) {
       firstname.value=data.firstname || ""
       lastname.value=data.lastname || ""
+      profile.value=data.photo || ""
     } else { console.error('Profil Bulunamadı:',data.error) }
   } catch (err) { console.error('Profil fetch hatası:', err) }
 }
@@ -189,13 +198,6 @@ const fetchAllBooks= async () => {
   }
   catch (err) { console.error('Kitap fetch hatası:', err) }
 }
-
-
-
-
-
-
-
 
 
 
