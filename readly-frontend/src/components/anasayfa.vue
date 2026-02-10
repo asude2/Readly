@@ -14,19 +14,19 @@
           <!-- ------------arama çubukları kısmı-------------- -->
           <div class="pt-5">
             <nav class="w-full">
-                <ul class="flex items-center tracking-widest justify-center space-x-12">
+                <ul class="text-red-600 flex items-center tracking-widest justify-center space-x-12">
                   <li>
-                    <a @click="kitapAra" href="#" class="relative after:block after:h-px after:w-0 after:bg-black after:transition-all after:duration-500 after:absolute after:bottom-0 after:left-0 hover:after:w-full">
+                    <a @click="kitapAra" href="#" class="relative after:block after:h-px after:w-0 after:bg-red-500 after:transition-all after:duration-500 after:absolute after:bottom-0 after:left-0 hover:after:w-full">
                       kitap yorumlamaları
                     </a>
                   </li>
                   <li>
-                    <a @click="okurAra" href="#" class="relative after:block after:h-px after:w-0 after:bg-black after:transition-all after:duration-500 after:absolute after:bottom-0 after:left-0 hover:after:w-full">
+                    <a @click="okurAra" href="#" class="relative after:block after:h-px after:w-0 after:bg-red-500 after:transition-all after:duration-500 after:absolute after:bottom-0 after:left-0 hover:after:w-full">
                       okurlar
                     </a>
                   </li>
                   <li>
-                    <a href="#" class="relative after:block after:h-px after:w-0 after:bg-black after:transition-all after:duration-500 after:absolute after:bottom-0 after:left-0 hover:after:w-full">
+                    <a href="#" class="relative after:block after:h-px after:w-0 after:bg-red-500 after:transition-all after:duration-300 after:absolute after:bottom-0 after:left-0 hover:after:w-full">
                       kitaplar
                     </a>
                   </li>
@@ -47,24 +47,25 @@
                 <button @click="follow(user.username, user.isFollowing)" class="bg-black text-white border rounded-[10px] px-2 py-[2px] font-light text-[15px] hover:bg-gray-700 mx-6">{{ user.isFollowing ? 'Takipten Çık' : 'Takip Et' }}</button>
             </div>
             <!--kitap yorumu arama çubuğu-->
-            <div v-if="kitapGör" class="flex items-center border border-gray-300 rounded-full px-3 my-4 w-full">
-                <i class="fa-solid fa-magnifying-glass text-gray-500"></i>
+            <div v-if="kitapGör" class="flex items-center border border-red-500 rounded-full px-3 my-4 w-full">
+                <i class="fa-solid fa-magnifying-glass text-red-600 pr-1"></i>
                 <input v-model="searchBookQuery" type="text" placeholder="kitap ara.." class="w-full px-2 py-1 outline-none rounded-full"/>
             </div>
           </div>
 
           <!-- -------------profile gitme kısmı------------ -->
-          <div @click.prevent="goToProfile" class="pt-3">
-            <i class="fa-solid fa-circle-user p-3 text-3xl flex cursor-pointer"><p class="px-1 text-2xl">profil</p></i>
+          <div @click.prevent="goToProfile" class="m-6 cursor-pointer flex items-center space-x-2">
+            <p class="text-xl font-semibold">Profile</p>
+            <img v-if="profile" :src="profile" alt="Profil" class="w-10 h-10 rounded-full object-cover border-2 border-red-500 hover:scale-110 transition transition-transform duration-300">
           </div>
 
 
         </div>
 
         <!--------------------------------------------CONTENT KISMI-------------------------------------------------------------------->
-        <div class="flex-column justify-center items-start min-h-screen m-10">
-          <div v-for="book in filteredBooks" :key="book.id" class="rounded-2xl shadow-lg bg-gray-200 p-6 transition-all duration-300 w-[90%] relative justify-center m-10 ">
-            <p @click="goUsersProfile(book.username)" class="flex items-center cursor-pointer font-semibold text-l ml-5 mb-8 mt-2  px-4 py-1 inline-flex border bg-gray-200 hover:bg-gray-300 rounded-[10px] transition-colors">
+        <div class="flex-column justify-center items-start min-h-screen m-40 mt-20">
+          <div v-for="book in filteredBooks" :key="book.id" class="rounded-2xl shadow-lg bg-red-50 p-6 transition-all duration-300 w-[90%] relative justify-center m-10 ">
+            <p @click="goUsersProfile(book.username)" class="flex items-center cursor-pointer font-semibold text-l ml-5 mb-8 mt-2  px-4 py-1 inline-flex  bg-red-50 hover:bg-red-500 hover:text-white rounded-[10px] transition-colors">
               <img v-if="book.user_photo" :src="book.user_photo" class="w-8 h-8 rounded-full mr-2 object-cover border border-white">
               <i v-else class="fa-solid fa-circle-user text-sm mr-2"></i>{{ book.username }}
             </p>

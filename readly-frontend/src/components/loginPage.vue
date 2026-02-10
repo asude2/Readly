@@ -1,6 +1,6 @@
 <template>
-    <div class="max-w-md mx-auto mt-10 p-6 border rounded-lg shadow-lg">
-        <h1 class="text-2xl p-5"><i class="fa-solid fa-arrow-left pr-2" @click="logoutApp"></i>Giriş Yap</h1>
+    <div class="max-w-md mx-auto mt-10 p-10 border rounded-lg shadow-lg bg-red-200">
+        <h1 class="text-white text-2xl p-5"><i class="fa-solid fa-arrow-left pr-5 cursor-pointer" @click="logoutApp"></i>Giriş Yap</h1>
 
         <div v-if="message" class="p-4 mb-4 text-sm rounded-lg" :class="isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'">
             {{ message }}
@@ -8,21 +8,21 @@
 
         <form @submit.prevent="handleLogin" class="flex flex-col">
             <div class="p-4 flex flex-col">
-                <p>Kullanıcı Adınız</p>
+                <p class="text-white">Kullanıcı Adınız</p>
                 <input v-model="form.username" type="text" placeholder="kullanıcı adı" class=" border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" required>
             </div>
             <div class="p-4 flex flex-col">
-                <p>Şifreniz</p>
+                <p class="text-white">Şifreniz</p>
                 <input v-model="form.password" type="password" placeholder="şifre" class=" border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" required>
             </div>
             <div class=" flex justify-end">
-                <button type="button" class=" text-blue-600 p-2 mr-3 rounded-[20px] hover:bg-gray-100 transition">Şifremi Unuttum</button>
-                <button type="submit" :disabled="isLoading" class="bg-gray-200 font-medium p-2 pl-6 pr-6 rounded-[20px] hover:bg-gray-100 transition disabled:bg-gray-400">
+                <button type="button" class=" text-white p-2 mr-3 rounded-[20px] border border-white hover:bg-white hover:text-red-600 transition-colors duration-300 ease-in-out">Şifremi Unuttum</button>
+                <button type="submit" :disabled="isLoading" class="text-red-600 border border-red-600 bg-red-200 font-medium p-2 pl-6 pr-6 rounded-[20px] bg-transparent hover:bg-red-600 hover:text-white transition-colors duration-300 ease-in-out">
                   {{ isLoading ? 'Giriş Yapılıyor...' : 'Giriş Yap' }}
                 </button>
             </div>
             <div>
-                <button @click.prevent="goToRegister" class="m-6 px-3 py-2 text-blue-600 font-bold rounded-[10px] hover:bg-gray-100 transition">HESABINIZ YOK MU? HEMEN KAYDOLUN</button>
+                <button @click.prevent="goToRegister" class="m-5 pt-5  text-white font-bold rounded-[10px] hover:text-red-500 transition transition-colors duration-300 ease-in-out">HESABINIZ YOK MU? HEMEN KAYDOLUN</button>
             </div>
         </form>
     </div>

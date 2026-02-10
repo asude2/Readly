@@ -15,7 +15,7 @@
         <img v-if="photo" :src="photo" @click="showModal=true" class="w-[11rem] h-[11rem] rounded-full object-cover mt-2 cursor-pointer border border-gray-400"  alt="profilePhoto" />
       </div>
       <div  class="flex flex-col cursor-pointer mt-5">
-        <i v-show="isOwner" @click="addBook" class="fa-solid fa-plus bg-gray-300 text-gray-800 py-5 pl-9 rounded-full hover:bg-gray-400 transition">Add Book</i>
+        <i v-show="isOwner" @click="addBook" class="fa-solid fa-plus bg-red-600 text-white py-4 pl-8 rounded-full hover:bg-red-700 transition-colors duration-200 ease-in-out">Add Book</i>
       </div>
     </div>
 
@@ -24,7 +24,7 @@
       <div class="flex gap-10 items-center">
         <h1 class="username text-2xl font-semibold">{{ username }}</h1>
         <div  class="flex items-center gap-2">
-          <button v-show="isOwner" class="bg-red-600 text-white font-small rounded-[15px] px-4 py-1 hover:bg-red-700" @click="showEditModal = true">Edit Profile</button>
+          <button v-show="isOwner" class="border border-black text-black font-small rounded-[15px] px-4 py-1 hover:bg-gray-100 hover:border-gray-100 hover:border-red-600 transition-colors duration-300 ease-in-out" @click="showEditModal = true">Edit Profile</button>
           <i v-show="isOwner" class="fa-solid fa-gear text-red-700 text-xl cursor-pointer"></i>
         </div>
       </div>
@@ -99,15 +99,15 @@
   </div>
 
   <!-- Kitap kartları -->
-  <div class="mt-10 grid grid-cols-3 gap-20 w-2/3 m-auto">
-    <div v-for="book in books" :key="book.id" class="relative rounded-2xl shadow-lg bg-white p-6 transition-all duration-300">
+  <div class="mt-20 grid grid-cols-3 gap-20 w-2/3 m-auto">
+    <div v-for="book in books" :key="book.id" class="relative rounded-2xl shadow-lg bg-red-100 p-6 transition-all duration-300">
       <img :src="book.image" class="w-full h-40 object-cover mt-2 rounded-[5px]"  alt="book image" />
       <div class="px-4 py-4 overflow-hidden">
         <h2 class="text-xl font-bold mb-2">{{ book.title }}</h2>
         <p class="text-gray-600 text-sm mb-4" :style="book.expanded ? 'max-height:none' : 'max-height:4rem; overflow:hidden;'">{{ book.description }}</p>
-        <button class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg" @click="book.expanded = !book.expanded">{{ book.expanded ? 'Show Less' : 'Read More' }}</button>
-        <button v-show="isOwner" @click="openEditBook(book)" class="bg-gray-300 hover:bg-gray-400 font-semibold py-2 px-4 rounded-lg ml-2">Edit</button>
-        <button v-show="isOwner" @click="deleteBook(book.id)" class="border border-black rounded-[5px] mt-3 px-[70px] py-1 font-semibold hover:bg-gray-100">Delete</button>
+        <button class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg" @click="book.expanded = !book.expanded">{{ book.expanded ? 'Show Less' : 'Read More' }}</button>
+        <button v-show="isOwner" @click="openEditBook(book)" class="bg-black text-white font-semibold py-2 px-4 rounded-lg ml-2">Edit</button>
+        <button v-show="isOwner" @click="deleteBook(book.id)" class="border border-black rounded-[5px] mt-3 px-[70px] py-1 font-semibold ">Delete</button>
       </div>
     </div>
   </div>
