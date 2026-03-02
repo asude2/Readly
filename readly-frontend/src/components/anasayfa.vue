@@ -33,7 +33,7 @@
                 </ul>
             </nav>
             <!--okur arama çubuğu-->
-            <div v-if="okurGör" class="flex items-center border border-gray-300 rounded-full px-3 my-4 w-full">
+            <div v-if="okurGör" class="flex items-center border border-red-500 rounded-full px-3 my-4 w-full">
                 <i class="fa-solid fa-magnifying-glass text-gray-500"></i>
                 <input @keyup.enter="searchUsers" v-model="searchQuery" type="text" placeholder="kullanıcı ara.." class="w-full px-2 py-1 outline-none rounded-full"/>
                 <button @click="searchUsers" class="bg-gray-200 rounded-[20px] hover:bg-gray-300 px-3 cursor-pointer">ARA</button>
@@ -73,6 +73,14 @@
             <div class="px-4 py-4 overflow-hidden">
               <h2 class="text-xl font-bold mb-2">{{book.title}}</h2>
               <p class="text-gray-600 text-sm mb-4">{{book.description}}</p>
+              <div class="flex items-center gap-2 mt-2">
+                <i @click="toggleLike(book)" class="cursor-pointer text-xl transition-all duration-200" :class="book.is_liked ? 'fa-solid fa-heart text-red-500' : 'fa-regular fa-heart text-black hover:text-red-500'"></i>
+                <span class="text-sm font-medium">{{ book.like_count }}</span>
+              </div>
+              <div>
+                <i class="cursor-pointer fa-regular fa-comment"></i>
+                comment
+              </div>
             </div>
           </div>
         </div>
@@ -190,7 +198,7 @@ const kitapAra=()=>{
 
 const fetchAllBooks= async () => {
   try{
-    const res= await fetch(`http://localhost:8000/api/getAllBooks`)
+    const res= await fetch(`http://localhost:8000/api/getAllBooks?currentUser=${username.value}`);
     const data=await res.json()
     if(res.ok){
       books.value=data
@@ -201,7 +209,32 @@ const fetchAllBooks= async () => {
 }
 
 
+const toggleLike = async (book) => {
+  const originalStatus = book.is_liked;
+  const originalCount = book.like_count;
 
+  book.is_liked = !book.is_liked;
+  book.like_count += book.is_liked ? 1 : -1;
+
+  try {
+    const res = await fetch('http://localhost:8000/api/toggleLike', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: username.value, // Giriş yapan kullanıcı
+        book_id: book.id
+      })
+    });
+
+    if (!res.ok) throw new Error('İşlem başarısız');
+  } catch (err) {
+    // 3. Hata olursa eski haline döndür
+    console.error('Like hatası:', err);
+    book.is_liked = originalStatus;
+    book.like_count = originalCount;
+    alert("İşlem başarısız oldu.");
+  }
+}
 
 
 

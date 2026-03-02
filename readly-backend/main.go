@@ -30,6 +30,11 @@ type Book struct {
 	Image       string `json:"image"`
 	Username    string `json:"username"`
 }
+type Like struct{
+	ID int `json:"id"`
+	Username string `json:"username"`
+	BookID int `json:"book_id"`
+}
 
 var db *sql.DB
 
@@ -39,6 +44,8 @@ func initDB() {
 	if err != nil {
 		log.Fatal("Veritabanı bağlantı hatası:", err)
 	}
+
+
 	// Users tablosu
 	createUsersTable := `CREATE TABLE IF NOT EXISTS users (
 		"id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -56,6 +63,7 @@ func initDB() {
 	if err != nil {
 		log.Fatal("Users tablosunu oluşturma hatası:", err)
 	}
+
 
 	// Books tablosu
 	createBooksTable := `CREATE TABLE IF NOT EXISTS books (
@@ -75,6 +83,8 @@ func initDB() {
 		log.Println("Books tablosuna username eklenemedi (muhtemelen zaten var):", err)
 	}
 
+
+	// Follow tablosu
 	createFollowTable := `CREATE TABLE IF NOT EXISTS follow (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		follower TEXT NOT NULL,
@@ -85,9 +95,24 @@ func initDB() {
 	if err != nil {
 		log.Fatal("Follow tablosunu oluşturma hatası:", err)
 	}
+
+
 	//photo sütunu yoksa ekle
 	_, _ = db.Exec(`ALTER TABLE users ADD COLUMN photo TEXT`)
 	log.Println("Veritabanı başarıyla hazırlandı.")
+
+
+	// Like tablosu
+	createLikesTable := `CREATE TABLE IF NOT EXISTS likes(
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		username TEXT NOT NULL,
+		book_id INTEGER NOT NULL,
+		UNIQUE(username, book_id)
+	);`
+	_, err = db.Exec(createLikesTable)
+	if err != nil {
+		log.Fatal("Likes tablosunu oluşturma hatası:", err)
+	}
 
 }
 
@@ -378,22 +403,31 @@ func getFollowersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getAllBooksHandler(w http.ResponseWriter, r *http.Request) {
+	//frınetndden giriş yapmış kullanıcının adını alıyoruz.
+	currentUser := r.URL.Query().Get("currentUser")
+
 	query := `
-        SELECT b.id, b.title, b.description, b.image, b.username, COALESCE(u.photo, '')
+        SELECT 
+			b.id, b.title, b.description, b.image, b.username, 
+			COALESCE(u.photo, ''),
+			(SELECT COUNT(*) FROM likes WHERE book_id=b.id) as like_count,
+			(SELECT COUNT(*) FROM likes WHERE book_id=b.id AND username=?) as is_liked
         FROM books b 
         LEFT JOIN users u ON b.username = u.username`
-	rows, err := db.Query(query)
+
+	rows, err := db.Query(query, currentUser)
+
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 	defer rows.Close()
 
 	var books []map[string]interface{}
 	for rows.Next() {
-        var id int
+        var id, likeCount, isLiked int
         var title, description, image, username, userPhoto string
-        if err := rows.Scan(&id, &title, &description, &image, &username, &userPhoto); err != nil {
+        if err := rows.Scan(&id, &title, &description, &image, &username, &userPhoto, &likeCount, &isLiked); err != nil {
             continue
         }
         books = append(books, map[string]interface{}{
@@ -403,10 +437,13 @@ func getAllBooksHandler(w http.ResponseWriter, r *http.Request) {
             "image":       image,
             "username":    username,
             "user_photo":  userPhoto, 
+			"like_count":  likeCount,
+			"is_liked":    isLiked > 0,
         })
     }
 	respondJSON(w, http.StatusOK, books)
 }
+
 
 func getFollowersListHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.URL.Query().Get("username")
@@ -523,6 +560,43 @@ func removeProfilePhotoHandler(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]string{"message": "photo removed"})
 }
 
+func toggleLikeHandler(w http.ResponseWriter, r *http.Request){
+	if r.Method != http.MethodPost {
+        http.Error(w, "only POST allowed", http.StatusMethodNotAllowed)
+        return
+    }
+	var req struct{
+		Username string `json:"username"`
+		BookID int `json:"book_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil{
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+
+	//önce silmeyi deniyoruz(eğer varsa beğeni kalkar)
+	res, err:=db.Exec("DELETE FROM likes WHERE username=? AND book_id=?", req.Username, req.BookID)
+	if err!=nil{
+		http.Error(w,"Veritabanı hatası", http.StatusInternalServerError)
+		return
+	}
+	rowsAffected, _ := res.RowsAffected()
+
+	// eğer hiç silinmediyse yani beğeni yoktu, ekleyelim
+	if rowsAffected == 0 {
+		_, err := db.Exec("INSERT INTO likes(username, book_id) VALUES(?, ?)", req.Username, req.BookID)
+		if err != nil {
+			http.Error(w, "Beğeni eklenemedi", http.StatusInternalServerError)
+			return
+		}
+		respondJSON(w, http.StatusOK, map[string]string{"message": "Kitap beğenildi"})
+	}else{
+		// zaten vardı, silindi
+		respondJSON(w, http.StatusOK, map[string]string{"message": "Kitap beğenisi kaldırıldı"})
+	}
+}
+
+
 func main() {
 	initDB()
 
@@ -549,6 +623,8 @@ func main() {
 	http.Handle("/api/getAllBooks", enableCORS(http.HandlerFunc(getAllBooksHandler)))
 
 	http.Handle("/api/debugBooksColumns", enableCORS(http.HandlerFunc(debugBooksColumnsHandler)))
+
+	http.Handle("/api/toggleLike", enableCORS(http.HandlerFunc(toggleLikeHandler)))
 
 	port := ":8000"
 	log.Printf("Go API sunucusu http://localhost%s adresinde dinlemede...", port)
