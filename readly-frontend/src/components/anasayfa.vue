@@ -73,14 +73,31 @@
             <div class="px-4 py-4 overflow-hidden">
               <h2 class="text-xl font-bold mb-2">{{book.title}}</h2>
               <p class="text-gray-600 text-sm mb-4">{{book.description}}</p>
+
               <div class="flex items-center gap-2 mt-2">
                 <i @click="toggleLike(book)" class="cursor-pointer text-xl transition-all duration-200" :class="book.is_liked ? 'fa-solid fa-heart text-red-500' : 'fa-regular fa-heart text-black hover:text-red-500'"></i>
                 <span class="text-sm font-medium">{{ book.like_count }}</span>
               </div>
-              <div>
-                <i class="cursor-pointer fa-regular fa-comment"></i>
-                comment
+
+              <div class="mt-4">
+                <div @click="toggleComments(book)" class="flex items-center cursor-pointer hover:text-red-500 transition-colors">
+                  <i class="fa-regular fa-comment mr-2"></i>
+                  <span>Yorumlar ({{ book.comment_count || 0 }})</span>
+                </div>
+
+                <div v-if="book.showComments" class="mt-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                  <div v-for="c in book.comments" :key="c.id" class="mb-3 text-sm border-b pb-2">
+                    <p class="font-bold text-red-600">{{ c.username }}</p>
+                    <p class="text-gray-700">{{ c.content }}</p>
+                  </div>
+                </div>
+
+                <div class="flex mt-3">
+                  <input v-model="book.newComment" @keyup.enter="submitComment(book)" placeholder="Yorumunu yaz..." class="flex-1 border rounded-lg px-2 py-1 text-sm outline-none">
+                  <button @click="submitComment(book)" class="ml-2 bg-red-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-600">Gönder</button>
+                </div>
               </div>
+
             </div>
           </div>
         </div>
@@ -91,6 +108,7 @@
 </template>
 
 <script setup>
+import { comment } from 'postcss'
 import { ref, onMounted, computed} from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -201,7 +219,12 @@ const fetchAllBooks= async () => {
     const res= await fetch(`http://localhost:8000/api/getAllBooks?currentUser=${username.value}`);
     const data=await res.json()
     if(res.ok){
-      books.value=data
+      books.value=data.map(book=>({
+        ...book,
+        showComments: false,
+        comments: [],
+        newComment: ''
+      }));
     }
     else { console.error('Kitap Bulunamadı:',data.error) }
   }
@@ -237,6 +260,48 @@ const toggleLike = async (book) => {
 }
 
 
+const fetchComments = async (bookId) => {
+    const res = await fetch(`http://localhost:8000/api/getComments?book_id=${bookId}`);
+    const data = await res.json();
+};
+
+
+//yorumları açıp kapama ve yorumları fetchleme
+const toggleComments = async (book) => {
+  book.showComments = !book.showComments;
+
+  //eğer daha önce yorumlar yüklenmemişse backendden çek
+  if (book.showComments && book.comments.length === 0) {
+    try {
+      const res = await fetch(`http://localhost:8000/api/getComments?book_id=${book.id}`);
+      const data = await res.json();
+      book.comments = data || [];
+    } catch (err) { console.error('Yorum yükleme hatası:', err); }
+  }
+};
+
+const submitComment = async (book) => {
+  if (!book.newComment.trim()) return;
+
+  try {
+    const res = await fetch('http://localhost:8000/api/addComment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: username.value,
+        book_id: book.id,
+        content: book.newComment
+      })
+    });
+    if (res.ok) {
+      const saveComment = await res.json();
+      book.comments.push(saveComment); //listeye yeni yorumu ekle
+      book.newComment = ''; //inputu temizle
+    }
+  } catch (err) {
+    console.error('Yorum gönderme hatası:', err);
+  }
+};
 
 
 

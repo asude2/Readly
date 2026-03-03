@@ -12,6 +12,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+//! MODELLER
 type User struct {
 	FirstName string `json:"firstname"`
 	LastName  string `json:"lastname"`
@@ -35,6 +36,13 @@ type Like struct{
 	Username string `json:"username"`
 	BookID int `json:"book_id"`
 }
+type Comment struct{
+	ID int `json:"id"`
+	Username string `json:"username"`
+	BookID int `json:"book_id"`
+	Content string `json:"content"`
+}
+//! MODELLER END ----------------------------------------------------------------------------------
 
 var db *sql.DB
 
@@ -46,6 +54,8 @@ func initDB() {
 	}
 
 
+
+	//! TABLOLARIN OLUŞTURULMASI
 	// Users tablosu
 	createUsersTable := `CREATE TABLE IF NOT EXISTS users (
 		"id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -106,15 +116,32 @@ func initDB() {
 	createLikesTable := `CREATE TABLE IF NOT EXISTS likes(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		username TEXT NOT NULL,
-		book_id INTEGER NOT NULL,
-		UNIQUE(username, book_id)
+		book_id INTEGER NOT NULL, 
+		UNIQUE(username, book_id)        
 	);`
 	_, err = db.Exec(createLikesTable)
 	if err != nil {
 		log.Fatal("Likes tablosunu oluşturma hatası:", err)
 	}
 
+	//Yorum tablosu
+	createCommentTable := `CREATE TABLE IF NOT EXISTS comments(
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		username TEXT NOT NULL,        
+		book_id INTEGER NOT NULL,
+		content TEXT NOT NULL
+	);`
+	_, err = db.Exec(createCommentTable)
+	if err != nil {
+		log.Fatal("Comment tablosunu oluşturma hatası:", err)
+	}
 }
+
+//! TABLOLARIN OLUŞTURULMASI END ----------------------------------------------------------------------------------
+
+
+
+
 
 // --- Yardımcı Fonksiyonlar ---
 func respondJSON(w http.ResponseWriter, status int, payload interface{}) {
@@ -142,6 +169,9 @@ func enableCORS(next http.Handler) http.Handler {
 	})
 }
 
+
+
+//! REGISTER - LOGIN 
 func registerHandler(w http.ResponseWriter, r *http.Request) {
 	var user User
 	err := json.NewDecoder(r.Body).Decode(&user)
@@ -200,7 +230,14 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, http.StatusOK, map[string]string{"message": "Giriş başarılı!"})
 }
+//! REGISTER - LOGIN END ----------------------------------------------------------------------------------
 
+
+
+
+
+
+//! PROFILE GET - UPDATE
 func profileHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.URL.Query().Get("username")
 	log.Println("Requested username:", username)
@@ -217,7 +254,7 @@ func profileHandler(w http.ResponseWriter, r *http.Request) {
 		user.Bio = ""
 	}
 
-	log.Println("Fetched user:", user)
+	log.Println("Fetched user:", user.Username, " - ", user.FirstName)
 	respondJSON(w, http.StatusOK, user)
 }
 
@@ -241,7 +278,13 @@ func updateProfileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	respondJSON(w, http.StatusOK, map[string]string{"message": "Profil başarıyla güncellendi!"})
 }
+//! PROFILE GET - UPDATE END ----------------------------------------------------------------------------------
 
+
+
+
+
+//! BOOKS ADD - GET - DELETE - UPDATE
 func addBookHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "only POST allowed", http.StatusMethodNotAllowed)
@@ -336,6 +379,13 @@ func updateBookHandler(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, http.StatusOK, map[string]string{"message": "Kitap güncellendi"})
 }
+//! BOOKS ADD - GET - DELETE - UPDATE END ----------------------------------------------------------------------------------
+
+
+
+
+
+
 
 func findUsersHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
@@ -365,6 +415,9 @@ func findUsersHandler(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, users)
 }
 
+
+
+//! FOLLOW - UNFOLLOW
 func followUserHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Follower  string `json:"follower"`
@@ -401,6 +454,12 @@ func getFollowersHandler(w http.ResponseWriter, r *http.Request) {
 		"following": followingCount,
 	})
 }
+//! FOLLOW - UNFOLLOW END ----------------------------------------------------------------------------------
+
+
+
+
+
 
 func getAllBooksHandler(w http.ResponseWriter, r *http.Request) {
 	//frınetndden giriş yapmış kullanıcının adını alıyoruz.
@@ -411,7 +470,8 @@ func getAllBooksHandler(w http.ResponseWriter, r *http.Request) {
 			b.id, b.title, b.description, b.image, b.username, 
 			COALESCE(u.photo, ''),
 			(SELECT COUNT(*) FROM likes WHERE book_id=b.id) as like_count,
-			(SELECT COUNT(*) FROM likes WHERE book_id=b.id AND username=?) as is_liked
+			(SELECT COUNT(*) FROM likes WHERE book_id=b.id AND username=?) as is_liked,
+			(SELECT COUNT(*) FROM comments WHERE book_id=b.id) as comment_count
         FROM books b 
         LEFT JOIN users u ON b.username = u.username`
 
@@ -425,9 +485,9 @@ func getAllBooksHandler(w http.ResponseWriter, r *http.Request) {
 
 	var books []map[string]interface{}
 	for rows.Next() {
-        var id, likeCount, isLiked int
+        var id, likeCount, isLiked, commentCount int
         var title, description, image, username, userPhoto string
-        if err := rows.Scan(&id, &title, &description, &image, &username, &userPhoto, &likeCount, &isLiked); err != nil {
+        if err := rows.Scan(&id, &title, &description, &image, &username, &userPhoto, &likeCount, &isLiked, &commentCount); err != nil {
             continue
         }
         books = append(books, map[string]interface{}{
@@ -439,12 +499,17 @@ func getAllBooksHandler(w http.ResponseWriter, r *http.Request) {
             "user_photo":  userPhoto, 
 			"like_count":  likeCount,
 			"is_liked":    isLiked > 0,
+			"comment_count": commentCount,
         })
     }
 	respondJSON(w, http.StatusOK, books)
 }
 
 
+
+
+
+//! GET FOLLOWERS - FOLLOWING
 func getFollowersListHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.URL.Query().Get("username")
 
@@ -494,9 +559,14 @@ func getFollowingListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	respondJSON(w, 200, following)
 }
+//! GET FOLLOWERS - FOLLOWING END ----------------------------------------------------------------------------------
 
-// uploadProfilePhotoHandler accepts multipart/form-data with fields "username" and file "photo".
-// It stores the image as a data URL (data:<mime>;base64,...) in the users.photo column.
+
+
+
+
+
+//! PROFILE PHOTO
 func uploadProfilePhotoHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "only POST allowed", http.StatusMethodNotAllowed)
@@ -559,7 +629,14 @@ func removeProfilePhotoHandler(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, http.StatusOK, map[string]string{"message": "photo removed"})
 }
+//! PROFILE PHOTO END ----------------------------------------------------------------------------------
 
+
+
+
+
+
+//! LIKES
 func toggleLikeHandler(w http.ResponseWriter, r *http.Request){
 	if r.Method != http.MethodPost {
         http.Error(w, "only POST allowed", http.StatusMethodNotAllowed)
@@ -595,6 +672,87 @@ func toggleLikeHandler(w http.ResponseWriter, r *http.Request){
 		respondJSON(w, http.StatusOK, map[string]string{"message": "Kitap beğenisi kaldırıldı"})
 	}
 }
+//! LIKES END ----------------------------------------------------------------------------------
+
+
+
+
+
+
+//! COMMENTS 
+func addCommentHandler(w http.ResponseWriter, r *http.Request){
+	if r.Method != http.MethodPost {
+		http.Error(w, "only POST allowd", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var c Comment  //gelen json verisini karşılamak için bir değişken oluşturduk.
+
+	err := json.NewDecoder(r.Body).Decode(&c) //json u oku ve c değişkenine doldur.
+	if err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+
+	if c.Content == "" {         //boş yorum yapılmasını engelliyoruz.
+		http.Error(w, "Yorum içeriği boş olamaz", http.StatusBadRequest)
+		return
+	}
+
+	res, err := db.Exec("INSERT INTO comments(username, book_id, content) VALUES(?, ?, ?)", c.Username, c.BookID, c.Content)
+
+	if err != nil {
+		http.Error(w, "Veritabanı kayıt hatası", http.StatusInternalServerError)
+		return
+	}
+
+	lastID, _ := res.LastInsertId() //eklenen yorumun id'sini alıyoruz.
+	c.ID = int(lastID)
+
+	respondJSON(w, http.StatusCreated, c) //oluşturulan yorumu json olarak döndürüyoruz.
+}
+
+
+func getCommentsHandler(w http.ResponseWriter, r *http.Request){
+	if(r.Method != http.MethodGet){
+		http.Error(w, "only GET allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	bookID := r.URL.Query().Get("book_id")
+	if bookID == ""{
+		http.Error(w, "book_id is required", http.StatusBadRequest)
+		return
+	}
+
+	//veritabanından bu kitaba ait tüm yorumları çekelim
+	rows, err := db.Query("SELECT id, username, book_id, content FROM comments WHERE book_id = ?", bookID)
+	if err != nil {
+		http.Error(w, "Veritabanı okuma hatası", http.StatusInternalServerError)
+		return
+	}
+
+	defer rows.Close()  //İş bitince bağlantıyı kapatıyoruz, yoksa bellek sızıntısı olur!
+
+	//gelen satırları bir listeye dönüştürelim
+	var comments []Comment
+	for rows.Next(){
+		var c Comment
+		err := rows.Scan(&c.ID, &c.Username, &c.BookID, &c.Content)
+		if err!=nil{
+			http.Error(w, "Veritabanı okuma hatası", http.StatusInternalServerError)
+			return
+		}
+		comments = append(comments,c)
+	}
+	if comments == nil {
+		comments = []Comment{}  //eğer hiç yorum yoksa boş bir liste döndürelim, null değil.
+	}
+	respondJSON(w, http.StatusOK, comments) //yorum listesini json olarak döndürelim.
+
+}
+//! COMMENTS END ---------------------------------------------------------------------------------------
+
 
 
 func main() {
@@ -625,6 +783,10 @@ func main() {
 	http.Handle("/api/debugBooksColumns", enableCORS(http.HandlerFunc(debugBooksColumnsHandler)))
 
 	http.Handle("/api/toggleLike", enableCORS(http.HandlerFunc(toggleLikeHandler)))
+
+	http.Handle("/api/addComment", enableCORS(http.HandlerFunc(addCommentHandler)))
+	http.Handle("/api/getComments", enableCORS(http.HandlerFunc(getCommentsHandler)))
+
 
 	port := ":8000"
 	log.Printf("Go API sunucusu http://localhost%s adresinde dinlemede...", port)
