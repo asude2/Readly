@@ -4,12 +4,12 @@
     <div class="book-wrap" :class="{ 'is-open': bookOpened }">
 
       <div class="book-cover-left">
-        <div class="cover-front text-white text-5xl text-right p-10 mt-20">REA</div>
+        <div class="cover-front text-white text-5xl text-right p-5 mt-20 tracking-widest font-['Playfair_Display']">REA</div>
         <div class="cover-back"></div>
       </div>
 
       <div class="book-cover-right">
-        <div class="cover-front text-white text-left text-5xl p-10 mt-20">DLY</div>
+        <div class="cover-front text-white text-left text-5xl p-5 mt-20 tracking-widest font-['Playfair_Display']">DLY</div>
         <div class="cover-back"></div>
       </div>
 
