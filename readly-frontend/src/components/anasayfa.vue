@@ -4,7 +4,7 @@
         <div class="flex justify-between">
           <!-- ------------logo kısmı-------------- -->
           <div class="pl-7 pt-5">
-            <h1 class="text-red-500 text-3xl font-medium italic font-serif flex  cursor-default">
+            <h1 class="text-[#b91c1c] text-3xl font-medium italic font-serif flex  cursor-default">
                 Readly
                 <i class="fa-solid fa-book-open text-2xl px-2 hover:scale-110 transition-transform transition-colors duration-700 border-2 border-transparent rounded-full"></i>
             </h1>
@@ -65,7 +65,7 @@
         <!--------------------------------------------CONTENT KISMI-------------------------------------------------------------------->
         <div class="flex-column justify-center items-start min-h-screen m-40 mt-20">
           <div v-for="book in filteredBooks" :key="book.id" class="rounded-2xl shadow-lg bg-red-50 p-6 transition-all duration-300 w-[90%] relative justify-center m-10 ">
-            <p @click="goUsersProfile(book.username)" class="flex items-center cursor-pointer font-semibold text-l ml-5 mb-8 mt-2  px-4 py-1 inline-flex  bg-red-50 hover:bg-red-500 hover:text-white rounded-[10px] transition-colors">
+            <p @click="goUsersProfile(book.username)" class="flex items-center cursor-pointer font-semibold text-l ml-5 mb-8 mt-2  px-4 py-1 inline-flex  bg-red-50 hover:bg-[#b91c1c] hover:text-white rounded-[10px] transition-colors">
               <img v-if="book.user_photo" :src="book.user_photo" class="w-8 h-8 rounded-full mr-2 object-cover border border-white">
               <i v-else class="fa-solid fa-circle-user text-sm mr-2"></i>{{ book.username }}
             </p>

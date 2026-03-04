@@ -1,6 +1,6 @@
 <template>
   <div class="pl-7 pt-5">
-    <h1 class="text-red-500 text-3xl font-medium italic font-serif flex  cursor-default">
+    <h1 class="text-[#b91c1c] text-3xl font-medium italic font-serif flex  cursor-default">
         Readly
         <i class="fa-solid fa-book-open text-2xl px-2 hover:scale-110 transition-transform transition-colors duration-700 border-2 border-transparent rounded-full"></i>
     </h1>
