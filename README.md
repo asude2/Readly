@@ -115,7 +115,7 @@ npm run dev
 
 ## 💡 Ekran Görüntüleri ve Kullanım
 
-*(Gelecekte buraya uygulamanızın anasayfa, profil ve mesajlar kısmından ekran görüntüleri ekleyebilirsiniz: `![Anasayfa](link-to-image)`)*
+*Şu anlık boş*
 
 ---
 
