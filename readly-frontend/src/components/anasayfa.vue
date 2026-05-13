@@ -1,5 +1,5 @@
 <template>
-  <div >
+  <div>
       <!--------------------------------------------HEADER KISMI------------------------------------------------------------------------>
         <div class="flex justify-between">
           <!-- ------------logo kısmı-------------- -->
@@ -11,47 +11,147 @@
             <i @click="goLoginPg" class="fa-regular fa-circle-left text-4xl  cursor-pointer"></i>
           </div>
 
-          <!-- ------------arama çubukları kısmı-------------- -->
-          <div class="pt-5">
-            <nav class="w-full">
-                <ul class="text-red-600 flex items-center tracking-widest justify-center space-x-12">
-                  <li>
-                    <a @click="kitapAra" href="#" class="relative after:block after:h-px after:w-0 after:bg-red-500 after:transition-all after:duration-500 after:absolute after:bottom-0 after:left-0 hover:after:w-full">
-                      kitap yorumlamaları
-                    </a>
-                  </li>
-                  <li>
-                    <a @click="okurAra" href="#" class="relative after:block after:h-px after:w-0 after:bg-red-500 after:transition-all after:duration-500 after:absolute after:bottom-0 after:left-0 hover:after:w-full">
-                      okurlar
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#" class="relative after:block after:h-px after:w-0 after:bg-red-500 after:transition-all after:duration-300 after:absolute after:bottom-0 after:left-0 hover:after:w-full">
-                      kitaplar
-                    </a>
-                  </li>
-                </ul>
+
+
+
+
+
+
+
+
+
+          <div class="pt-5 max-w-2xl mx-auto">
+            <nav class="w-full mb-6">
+              <ul class="text-red-600 flex items-center tracking-widest justify-center space-x-8 md:space-x-12 font-medium text-sm">
+                <li>
+                  <button @click="kitapAra" class="relative pb-1 after:block after:h-[2px] after:w-0 after:bg-red-600 after:transition-all after:duration-300 after:absolute after:bottom-0 after:left-0 hover:after:w-full" :class="{'after:w-full': kitapGör}">
+                    kitap incelemeleri
+                  </button>
+                </li>
+                <li>
+                  <button @click="okurAra" class="relative pb-1 after:block after:h-[2px] after:w-0 after:bg-red-600 after:transition-all after:duration-300 after:absolute after:bottom-0 after:left-0 hover:after:w-full" :class="{'after:w-full': okurGör}">
+                    okurlar
+                  </button>
+                </li>
+                <li>
+                  <button class="relative pb-1 after:block after:h-[2px] after:w-0 after:bg-red-600 after:transition-all after:duration-300 after:absolute after:bottom-0 after:left-0 hover:after:w-full">
+                    kitaplar
+                  </button>
+                </li>
+              </ul>
             </nav>
-            <!--okur arama çubuğu-->
-            <div v-if="okurGör" class="flex items-center border border-red-500 rounded-full px-3 my-4 w-full">
-                <i class="fa-solid fa-magnifying-glass text-gray-500"></i>
-                <input @keyup.enter="searchUsers" v-model="searchQuery" type="text" placeholder="kullanıcı ara.." class="w-full px-2 py-1 outline-none rounded-full"/>
-                <button @click="searchUsers" class="bg-gray-200 rounded-[20px] hover:bg-gray-300 px-3 cursor-pointer">ARA</button>
-            </div>
-            <div v-if="okurGör" v-for="user in users.filter(u=>u.username!==username)" :key="user.username" class="flex bg-gray-200 justify-between items-center border rounded-[20px] py-2 m-2 cursor-pointer border-gray-300 ">
-                <div @click="goUsersProfile(user.username)" class="flex items-center font-semibold mx-6">
-                    <img v-if="user.photo" :src="user.photo" alt="profile photo" class="w-8 h-8 rounded-full mr-2 object-cover border border-gray-400">
-                    <i v-else class="fa-solid fa-circle-user text-2xl mr-2 text-gray-500"></i>
-                    <span>{{ user.username }}</span>
+
+            <!-- Okur Arama Çubuğu -->
+            <div v-if="okurGör" class="transition-all duration-300">
+              <div class="flex items-center bg-white/10 border border-red-500/50 rounded-full px-4 py-1.5 my-4 w-full focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500/30">
+                <i class="fa-solid fa-magnifying-glass text-gray-400 mr-2"></i>
+                <input
+                  @keyup.enter="searchUsers"
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="kullanıcı ara.."
+                  class="w-full bg-transparent text-black placeholder-gray-500 outline-none text-sm"
+                />
+                <button @click="searchUsers" class="bg-red-600 text-white rounded-full hover:bg-red-700 px-4 py-1 text-xs font-bold transition-colors">
+                  ARA
+                </button>
+              </div>
+
+              <!-- Kullanıcı Listesi -->
+              <div v-for="user in users.filter(u=>u.username!==username)" :key="user.username"
+                  class="flex bg-white/5 hover:bg-white/10 justify-between items-center border border-gray-700 rounded-xl py-3 px-4 mb-2 cursor-pointer transition-all">
+                <div @click="goUsersProfile(user.username)" class="flex items-center font-semibold text-white">
+                  <img v-if="user.photo" :src="user.photo" alt="profile photo" class="w-10 h-10 rounded-full mr-3 object-cover border border-gray-600">
+                  <i v-else class="fa-solid fa-circle-user text-3xl mr-3 text-gray-400"></i>
+                  <span>{{ user.username }}</span>
                 </div>
-                <button @click="follow(user.username, user.isFollowing)" class="bg-black text-white border rounded-[10px] px-2 py-[2px] font-light text-[15px] hover:bg-gray-700 mx-6">{{ user.isFollowing ? 'Takipten Çık' : 'Takip Et' }}</button>
+                <button
+                  @click="follow(user.username, user.isFollowing, user.isPending)"
+                  class="border rounded-full px-4 py-1 text-xs font-semibold transition-all"
+                  :class="user.isFollowing ? 'bg-transparent border-gray-500 text-gray-300 hover:bg-red-900/20' : user.isPending ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-white text-black hover:bg-gray-200'"
+                >
+                  {{ user.isFollowing ? 'Takipten Çık' : user.isPending ? 'İstek Gönderildi' : 'Takip Et' }}
+                </button>
+              </div>
             </div>
-            <!--kitap yorumu arama çubuğu-->
-            <div v-if="kitapGör" class="flex items-center border border-red-500 rounded-full px-3 my-4 w-full">
-                <i class="fa-solid fa-magnifying-glass text-red-600 pr-1"></i>
-                <input v-model="searchBookQuery" type="text" placeholder="kitap ara.." class="w-full px-2 py-1 outline-none rounded-full"/>
+
+            <!-- Kitap Yorumu Arama Çubuğu -->
+            <div v-if="kitapGör" class="flex items-center bg-white/10 border border-red-500/50 rounded-full px-4 py-2 my-4 w-full focus-within:border-red-500 focus-within:ring-1 focus-within:ring-red-500/30 transition-all">
+              <i class="fa-solid fa-magnifying-glass text-red-600 mr-3"></i>
+              <input
+                v-model="searchBookQuery"
+                type="text"
+                placeholder="kitap incelemesi ara.."
+                class="w-full bg-transparent text-black placeholder-gray-500 outline-none text-sm"
+              />
             </div>
           </div>
+
+
+
+          <div class="flex items-center mt-11 pr-5 gap-2">
+            <!-- ! messages -->
+            <button @click="$router.push('/mesajlar')" class="relative p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors mr-2">
+              <i class="fa-regular fa-paper-plane text-xl"></i>
+              <span v-if="unreadMessageCount > 0" class="absolute top-0 right-0 flex items-center justify-center h-4 w-4 bg-red-600 text-white text-[10px] rounded-full border-2 border-white font-bold">
+                {{ unreadMessageCount > 9 ? '9+' : unreadMessageCount }}
+              </span>
+            </button>
+
+            <!-- ! notifications -->
+            <div class="relative notifications-wrapper">
+              <button @click="toggleNotifications" class="relative p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+              </svg>
+              <span v-if="pendingRequests.length" class="absolute top-1 right-1 flex h-3 w-3">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+              </span>
+            </button>
+
+            <div v-if="isNotificationsOpen"
+                class="absolute right-0 mt-2 w-80 z-50 rounded-2xl bg-white p-2 shadow-xl border border-gray-100 ring-1 ring-black ring-opacity-5">
+
+              <div class="p-3 border-b border-gray-50 mb-2">
+                <p class="text-sm font-bold text-black">Bildirimler</p>
+              </div>
+
+              <div class="max-h-20 overflow-y-auto">
+                <div v-if="pendingRequests.length || acceptedFollows.length">
+                  <div v-for="item in pendingRequests" :key="`pending-${item.follower}`"
+                      class="flex items-center justify-between gap-3 rounded-xl hover:bg-gray-50 p-3 mb-1 transition-colors">
+                    <div class="text-xs text-gray-800">
+                      <span class="font-bold">{{ item.follower }}</span> seni takip etmek istiyor.
+                    </div>
+                    <div class="flex gap-2">
+                      <button @click="approveRequest(item.follower)"
+                              class="px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 text-[10px] font-semibold">
+                        Onayla
+                      </button>
+                      <button @click="rejectRequest(item.follower)"
+                              class="px-3 py-1.5 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 text-[10px] font-semibold transition-colors">
+                        Sil
+                      </button>
+                    </div>
+                  </div>
+
+                  <div v-for="item in acceptedFollows" :key="`accepted-${item.follower}`"
+                      class="rounded-xl hover:bg-gray-50 p-3 mb-1 text-xs text-gray-600 transition-colors">
+                    <span class="font-bold text-black">{{ item.follower }}</span> seni takip etti.
+                  </div>
+                </div>
+
+                <div v-else class="py-8 text-center">
+                  <p class="text-sm text-gray-400">Henüz yeni bir bildirim yok.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          </div>
+
+
+
 
           <!-- -------------profile gitme kısmı------------ -->
           <div @click.prevent="goToProfile" class="m-6 cursor-pointer flex items-center space-x-2">
@@ -87,8 +187,19 @@
 
                 <div v-if="book.showComments" class="mt-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                   <div v-for="c in book.comments" :key="c.id" class="mb-3 text-sm border-b pb-2">
-                    <p class="font-bold text-red-600">{{ c.username }}</p>
-                    <p class="text-gray-700">{{ c.content }}</p>
+                    <div class="flex justify-between items-start">
+                      <div class="flex-1">
+                        <p class="font-bold text-red-600">{{ c.username }}</p>
+                        <p class="text-gray-700">{{ c.content }}</p>
+                      </div>
+                      <button
+                        v-if="c.username === username"
+                        @click="deleteComment(book, c.id)"
+                        class="ml-2 text-red-500 hover:text-red-700 text-xl mt-1"
+                      >
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -109,10 +220,11 @@
 
 <script setup>
 import { comment } from 'postcss'
-import { ref, onMounted, computed} from 'vue'
+import { ref, onMounted, onUnmounted, computed} from 'vue'
 import { useRouter } from 'vue-router'
 
 const router=useRouter()
+const isNotificationsOpen = ref(false);
 
 
 const goLoginPg=()=>{
@@ -141,6 +253,24 @@ const okurGör=ref(false)
 const kitapGör=ref(true)
 const books=ref([])
 const searchBookQuery = ref("")
+const pendingRequests = ref([])
+const acceptedFollows = ref([])
+
+const unreadMessageCount = ref(0)
+let messagePollingInterval = null
+
+const fetchUnreadMessageCount = async () => {
+  if (!username.value) return
+  try {
+    const res = await fetch(`http://localhost:8000/api/messages/unreadCount?currentUser=${username.value}`)
+    if (res.ok) {
+      const data = await res.json()
+      unreadMessageCount.value = data.count || 0
+    }
+  } catch (err) {
+    console.error('Mesaj bildirimleri alınamadı:', err)
+  }
+}
 
 const filteredBooks = computed(() => {
   if (!searchBookQuery.value) return books.value
@@ -183,9 +313,70 @@ const searchUsers=async()=>{
   catch (err){console.error('Kullanıcı arama hatası:', err)}
 }
 
+const fetchNotifications = async () => {
+  try {
+    const res = await fetch(`http://localhost:8000/api/getNotifications?username=${username.value}`)
+    const data = await res.json()
+    if (res.ok) {
+      pendingRequests.value = data.pendingRequests || []
+      acceptedFollows.value = data.acceptedFollows || []
+    } else {
+      console.error('Bildirimler alınamadı:', data.error)
+    }
+  } catch (err) {
+    console.error('Bildirim fetch hatası:', err)
+  }
+}
+
+const approveRequest = async (follower) => {
+  try {
+    const res = await fetch('http://localhost:8000/api/followUser', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        follower,
+        following: username.value,
+        action: 'approve'
+      })
+    })
+    const data = await res.json()
+    if (res.ok) {
+      await fetchNotifications()
+      searchUsers()
+    } else {
+      console.error('Onaylama hatası:', data.error)
+    }
+  } catch (err) {
+    console.error('Onaylama hatası:', err)
+  }
+}
+
+const rejectRequest = async (follower) => {
+  try {
+    const res = await fetch('http://localhost:8000/api/followUser', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        follower,
+        following: username.value,
+        action: 'reject'
+      })
+    })
+    const data = await res.json()
+    if (res.ok) {
+      await fetchNotifications()
+      searchUsers()
+    } else {
+      console.error('Reddetme hatası:', data.error)
+    }
+  } catch (err) {
+    console.error('Reddetme hatası:', err)
+  }
+}
+
 // takip etme / takipten çıkma
-const follow = async (targetUsername, isFollowing) => {
-  const action = isFollowing ? 'unfollow' : 'follow'
+const follow = async (targetUsername, isFollowing, isPending) => {
+  const action = isFollowing || isPending ? 'unfollow' : 'follow'
   try {
     const res = await fetch('http://localhost:8000/api/followUser', {
       method: 'POST',
@@ -198,7 +389,8 @@ const follow = async (targetUsername, isFollowing) => {
     })
     const data = await res.json()
     if (res.ok) {
-      searchUsers()
+      await searchUsers()
+      await fetchNotifications()
     } else console.error('Takip hatası:', data.error)
   } catch (err) { console.error('Takip hatası:', err) }
 }
@@ -303,12 +495,205 @@ const submitComment = async (book) => {
   }
 };
 
+const deleteComment = async (book, commentId) => {
+  // Kullanıcıdan onay al
+  if (!confirm('Bu yorumu silmek istediğinizden emin misiniz?')) {
+    return;
+  }
+
+  try {
+    const res = await fetch('http://localhost:8000/api/deleteComment', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        comment_id: commentId,
+        username: username.value
+      })
+    });
+    if (res.ok) {
+      // Silinen yorumu listeden çıkar
+      book.comments = book.comments.filter(c => c.id !== commentId);
+      book.comment_count -= 1;
+    } else {
+      const error = await res.json();
+      alert(error.error || 'Yorum silinemedi');
+    }
+  } catch (err) {
+    console.error('Yorum silme hatası:', err);
+    alert('Yorum silinemedi');
+  }
+};
 
 
-onMounted(() => {
-  fetchProfile()
-  fetchAllBooks()
+// Menüyü açıp kapatan fonksiyon
+const toggleNotifications = () => {
+  isNotificationsOpen.value = !isNotificationsOpen.value;
+};
+
+const closeNotifications = (e) => {
+  if (!e.target.closest('.notifications-wrapper')) {
+    isNotificationsOpen.value = false;
+  }
+};
+
+
+onMounted(async () => {
+  username.value = localStorage.getItem('username') || ''
+  if (!username.value) {
+    router.push('/')
+    return
+  }
+  
+  await fetchProfile()
+  await fetchAllBooks()
+  await fetchNotifications()
+  
+  fetchUnreadMessageCount()
+  messagePollingInterval = setInterval(fetchUnreadMessageCount, 3000)
+
+  window.addEventListener('click', closeNotifications);
+})
+
+onUnmounted(() => {
+  window.removeEventListener('click', closeNotifications);
+  if (messagePollingInterval) clearInterval(messagePollingInterval)
 })
 
 </script>
 
+<style scoped>
+/* ==================== DARK MODE STİLLERİ ==================== */
+
+/* Ana Arka Plan */
+:global(.dark) {
+  background-color: #0f1419;
+  color: #e3e3e3;
+}
+
+/* Kitap Kartları */
+:global(.dark) .bg-red-50 {
+  background-color: #1e2535;
+  color: #e3e3e3;
+}
+
+/* Beyaz Alanlar - Yorum Bölümleri */
+:global(.dark) .bg-white {
+  background-color: #252d3d;
+  color: #e3e3e3;
+  border-color: #3a4557;
+}
+
+/* Gri Background Elements */
+:global(.dark) .bg-gray-200 {
+  background-color: #252d3d;
+  color: #e3e3e3;
+  border-color: #3a4557;
+}
+
+/* Text Colors */
+:global(.dark) .text-red-600 {
+  color: #ff7a7a;
+}
+
+:global(.dark) .text-gray-600 {
+  color: #b0b0b0;
+}
+
+:global(.dark) .text-gray-700 {
+  color: #a0a0a0;
+}
+
+:global(.dark) .text-gray-500 {
+  color: #808080;
+}
+
+:global(.dark) .text-black {
+  color: #e3e3e3;
+}
+
+:global(.dark) .text-xl {
+  color: inherit;
+}
+
+/* Borders */
+:global(.dark) .border-red-500 {
+  border-color: #ff6b6b;
+}
+
+:global(.dark) .border-gray-300,
+:global(.dark) .border-gray-400 {
+  border-color: #3a4557;
+}
+
+:global(.dark) .border-gray-100 {
+  border-color: #2d3748;
+}
+
+/* Form Elements */
+:global(.dark) input {
+  background-color: #252d3d;
+  color: #e3e3e3;
+  border-color: #3a4557;
+}
+
+:global(.dark) input::placeholder {
+  color: #808080;
+}
+
+:global(.dark) button {
+  transition: all 0.3s ease;
+}
+
+:global(.dark) button.bg-gray-200 {
+  background-color: #3a4557;
+  color: #e3e3e3;
+}
+
+:global(.dark) button.bg-gray-200:hover {
+  background-color: #4a5568;
+}
+
+:global(.dark) button.bg-red-500 {
+  background-color: #c33333;
+}
+
+:global(.dark) button.bg-red-500:hover {
+  background-color: #a52a2a;
+}
+
+:global(.dark) button.bg-black {
+  background-color: #2d3748;
+  color: #e3e3e3;
+}
+
+:global(.dark) button.bg-black:hover {
+  background-color: #3a4557;
+}
+
+/* Heart Icon Colors */
+:global(.dark) .fa-heart {
+  color: #ff7a7a;
+}
+
+:global(.dark) .text-red-500 {
+  color: #ff7a7a;
+}
+
+:global(.dark) .hover\:text-red-500:hover {
+  color: #ffa0a0;
+}
+
+/* Shadow Effects */
+:global(.dark) .shadow-lg {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+:global(.dark) .shadow-sm {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Smooth Transitions */
+:global(.dark) * {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+</style>
