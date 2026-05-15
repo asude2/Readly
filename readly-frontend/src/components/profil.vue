@@ -1,53 +1,60 @@
 <template>
-  <div class="pl-7 pt-5">
-    <h1 class="text-[#b91c1c] text-3xl font-medium italic font-serif flex  cursor-default">
+  <div class="flex justify-between items-center px-8 py-6 w-full max-w-6xl mx-auto">
+    <h1 class="text-red-600 text-3xl font-medium italic font-serif flex items-center cursor-default">
         Readly
-        <i class="fa-solid fa-book-open text-2xl px-2 hover:scale-110 transition-transform transition-colors duration-700 border-2 border-transparent rounded-full"></i>
+        <i class="fa-solid fa-book-open text-2xl px-2"></i>
     </h1>
-    <i @click="goMainPg" class="fa-regular fa-circle-left text-4xl  cursor-pointer"></i>
+    <i @click="goMainPg" class="fa-regular fa-circle-left text-4xl text-gray-600 dark:text-gray-400 cursor-pointer hover:text-red-600 dark:hover:text-red-600 transition-colors"></i>
   </div>
 
-  <div class="flex justify-center gap-20 relative">
+  <div class="flex flex-col md:flex-row justify-center items-center md:items-start gap-12 md:gap-20 mt-8 mb-12 w-full max-w-4xl mx-auto px-6">
 
     <!-- Sol taraf: Profil resmi ve kitap ekleme -->
-    <div>
-      <div>
-        <img v-if="photo" :src="photo" @click="showModal=true" class="w-[11rem] h-[11rem] rounded-full object-cover mt-2 cursor-pointer border border-gray-400"  alt="profilePhoto" />
+    <div class="flex flex-col items-center">
+      <div class="relative group">
+        <img v-if="photo" :src="photo" @click="showModal=true" class="w-40 h-40 md:w-44 md:h-44 rounded-full object-cover cursor-pointer ring-4 ring-gray-100 dark:ring-gray-200 shadow-lg group-hover:ring-red-100 dark:group-hover:ring-red-900/30 transition-all duration-300" alt="profilePhoto" />
+        <div v-if="isOwner" @click="showEditModal = true" class="absolute bottom-2 right-2 bg-gray-900 dark:bg-gray-700 text-white p-2.5 rounded-full cursor-pointer shadow-md hover:bg-gray-800 transition-colors border-2 border-white dark:border-gray-800">
+          <i class="fa-solid fa-pen text-sm"></i>
+        </div>
       </div>
-      <div  class="flex flex-col cursor-pointer mt-5">
-        <i v-show="isOwner" @click="addBook" class="fa-solid fa-plus bg-red-600 text-white py-4 pl-8 rounded-full hover:bg-red-700 transition-colors duration-200 ease-in-out">Add Book</i>
-      </div>
+      <button v-show="isOwner" @click="addBook" class="mt-6 flex items-center gap-2 bg-red-600 text-white font-semibold py-2.5 px-6 rounded-full hover:bg-red-700 shadow-md hover:shadow-lg transition-all duration-200">
+        <i class="fa-solid fa-plus"></i> Yeni Gönderi
+      </button>
     </div>
 
     <!-- Sağ taraf: Profil bilgileri -->
-    <div class="w-72">
-      <div class="flex gap-10 items-center">
-        <h1 class="username text-2xl font-semibold">{{ username }}</h1>
-        <div  class="flex items-center gap-2">
-          <button v-show="isOwner" class="border border-black text-black font-small rounded-[15px] px-4 py-1 hover:bg-gray-100 hover:border-gray-100 hover:border-red-600 transition-colors duration-300 ease-in-out" @click="showEditModal = true">Edit Profile</button>
-          <i v-show="isOwner" @click="showSettingsModal = true" class="fa-solid fa-gear text-red-700 text-xl cursor-pointer hover:scale-110 transition-transform"></i>
+    <div class="w-full md:w-[28rem] flex flex-col items-center md:items-start text-center md:text-left">
+      <div class="flex flex-col md:flex-row md:items-center gap-4 md:gap-6 mb-5">
+        <h1 class="text-2xl md:text-3xl font-bold text-black dark:text-white">{{ username }}</h1>
+        <div class="flex items-center justify-center gap-3">
+          <button v-show="isOwner" class="border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-slate-300 font-medium rounded-lg px-4 py-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors duration-200 text-sm" @click="showEditModal = true">Profili Düzenle</button>
+          <i v-show="isOwner" @click="showSettingsModal = true" class="fa-solid fa-gear text-gray-400 hover:text-gray-800 dark:hover:text-slate-300 text-xl cursor-pointer transition-colors"></i>
         </div>
       </div>
-        <div>
-            <p v-if="!isOwner" @click="toggleFollow" class="takipEt font-semibold text-sm border rounded-md px-5 py-1 cursor-pointer max-w-max transition-colors"
-               :class="isFollowing ? 'bg-transparent border-gray-500 text-gray-500 hover:bg-red-900/10' : isPending ? 'bg-gray-200 text-gray-700 border-gray-200 hover:bg-gray-300' : 'bg-red-700 text-white border-red-700 hover:bg-red-800'">
-              {{ isFollowing ? 'Takipten Çık' : isPending ? 'İstek Gönderildi' : 'Takip Et' }}
-            </p>
+
+      <div class="mb-5">
+          <button v-if="!isOwner" @click="toggleFollow" class="font-semibold text-sm border rounded-lg px-6 py-2 transition-all duration-200 shadow-sm"
+             :class="isFollowing ? 'bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-800 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 hover:border-red-200' : isPending ? 'bg-slate-200 dark:bg-slate-700 text-gray-600 dark:text-gray-400 border-transparent cursor-wait' : 'bg-red-600 text-white border-red-600 hover:bg-red-700 hover:shadow-md'">
+            {{ isFollowing ? 'Takipten Çık' : isPending ? 'İstek Gönderildi' : 'Takip Et' }}
+          </button>
+      </div>
+
+      <div class="flex gap-8 mb-6 bg-gray-50 dark:bg-slate-800/50 py-3 px-6 rounded-xl border border-gray-100 dark:border-slate-800">
+        <div @click="showFollowers=true" class="flex flex-col items-center cursor-pointer group">
+            <span class="font-bold text-xl text-black dark:text-white group-hover:text-red-600 transition-colors">{{ followersCount }}</span>
+            <span class="text-sm text-gray-500 dark:text-gray-400">Takipçi</span>
         </div>
-      <div class="flex gap-12 pt-2">
-        <div @click="showFollowers=true" class="flex cursor-pointer">
-            <p class="font-bold text-[18px]">{{ followersCount }}&nbsp;</p>
-            <p> followers</p>
-        </div>
-        <div @click="showFollowing=true" class="flex cursor-pointer">
-            <p class="font-bold text-[18px]">{{ followingCount }}&nbsp;</p>
-            <p> following</p>
+        <div class="w-px bg-slate-200 dark:bg-slate-700"></div>
+        <div @click="showFollowing=true" class="flex flex-col items-center cursor-pointer group">
+            <span class="font-bold text-xl text-black dark:text-white group-hover:text-red-600 transition-colors">{{ followingCount }}</span>
+            <span class="text-sm text-gray-500 dark:text-gray-400">Takip</span>
         </div>
       </div>
-      <div class="pt-5">
-        <p class="isim font-semibold text-xl">{{ firstname }} {{ lastname }}</p>
-        <p class="biography pt-1 text-gray-500 font-light leading-relaxed">{{ bio }}</p>
-        <p class="mt-4 text-sm text-gray-500">Profil Gizliliği: <span class="font-semibold text-gray-800">{{ profilePrivacy }}</span></p>
+
+      <div class="w-full">
+        <p class="font-semibold text-lg text-black dark:text-slate-100">{{ firstname }} {{ lastname }}</p>
+        <p class="mt-2 text-gray-600 dark:text-slate-300 leading-relaxed max-w-sm">{{ bio }}</p>
+        <p class="mt-4 text-xs font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-slate-800 inline-flex px-3 py-1 rounded-full"><i class="fa-solid fa-lock mr-1.5 text-[10px]"></i> {{ profilePrivacy }}</p>
       </div>
     </div>
   </div>
@@ -66,39 +73,46 @@
     <!-- Profil düzenleme (edit profile kısmını büyültme) -->
     <transition name="zoom">
       <div v-if="showEditModal" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50" @click="showEditModal = false">
-        <div class="bg-white p-6 rounded-lg w-80" @click.stop>
-          <h2 class="text-xl font-semibold mb-4">Edit Profile</h2>
-          <div class="flex  block font-medium">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl w-80 shadow-2xl border border-gray-100 dark:border-slate-700" @click.stop>
+          <h2 class="text-xl font-bold mb-6 text-black dark:text-white">Profili Düzenle</h2>
+          <div class="flex items-center block font-medium mb-2 text-gray-800 dark:text-slate-200">
               <i class="fa-regular fa-image pt-1"></i>
-              <p class="pl-1">Profile Photo</p>
+              <p class="pl-2 text-sm">Profil Fotoğrafı</p>
           </div>
-          <input type="file" accept="image/*" @change="addProfilePhoto" class="pb-4"> <!--accept:sadece resim formatındaki dosyaların seçilmesine izin verir.-->
-          <button  @click="removePP" class="bg-gray-200 border border-gray-600 px-1 py-[2px] rounded-[2px] mb-4">remove photo</button>
-          <label class="block mb-2 font-medium">Biography</label>
-          <textarea v-model="bio" class="w-full border border-gray-300 rounded px-2 py-1 mb-4"></textarea>
-          <label class="block mb-2 font-medium">First Name</label>
-          <input v-model="firstname" type="text" class="w-full border border-gray-300 rounded px-2 py-1 mb-4" />
-          <label class="block mb-2 font-medium">Last Name</label>
-          <input v-model="lastname" type="text" class="w-full border border-gray-300 rounded px-2 py-1 mb-4" />
+          <input type="file" accept="image/*" @change="addProfilePhoto" class="pb-4 block w-full text-xs text-gray-500 dark:text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 transition-colors">
+          <button @click="removePP" class="text-xs text-gray-500 hover:text-red-600 mb-6 transition-colors underline decoration-dotted">Fotoğrafı Kaldır</button>
+          
+          <label class="block mb-2 font-semibold text-sm text-gray-800 dark:text-slate-200">Biyografi</label>
+          <textarea v-model="bio" class="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 mb-4 bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 text-sm" rows="3"></textarea>
+          
+          <label class="block mb-2 font-semibold text-sm text-gray-800 dark:text-slate-200">Ad</label>
+          <input v-model="firstname" type="text" class="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 mb-4 bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 text-sm" />
+          
+          <label class="block mb-2 font-semibold text-sm text-gray-800 dark:text-slate-200">Soyad</label>
+          <input v-model="lastname" type="text" class="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 mb-6 bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 text-sm" />
+          
           <div class="flex justify-end gap-2">
-            <button class="px-4 py-1 rounded bg-black text-white" @click="saveProfile">Save</button>
+            <button class="px-5 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition-all shadow-md active:scale-95" @click="saveProfile">Kaydet</button>
           </div>
         </div>
+
       </div>
     </transition>
 
     <!-- Ayarlar Modal -->
     <transition name="zoom">
       <div v-if="showSettingsModal" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50" @click="showSettingsModal = false">
-        <div class="bg-white p-6 rounded-lg w-80 shadow-lg" @click.stop>
-          <h2 class="text-xl font-semibold mb-6 flex items-center">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-xl w-80 shadow-2xl border border-gray-100 dark:border-slate-700" @click.stop>
+          <h2 class="text-xl font-bold mb-6 flex items-center text-black dark:text-white">
             <i class="fa-solid fa-sliders text-red-700 mr-2"></i>
             Ayarlar
           </h2>
 
+
           <!-- Tema Seçimi -->
           <div class="mb-6">
-            <label class="block text-sm font-semibold mb-3 text-gray-700">Tema Seçimi</label>
+            <label class="block text-sm font-semibold mb-3 text-gray-700 dark:text-slate-300">Tema Seçimi</label>
+
             <div class="flex gap-3">
               <button
                 @click="setTheme('light')"
@@ -129,8 +143,8 @@
 
           <!-- Profil Gizliliği -->
           <div class="mb-6">
-            <label class="block text-sm font-semibold mb-3 text-gray-700">Profil Gizliliği</label>
-            <div class="space-y-2">
+            <label class="block text-sm font-semibold mb-3 text-gray-700 dark:text-slate-300">Profil Gizliliği</label>
+            <div class="space-y-2 text-gray-800 dark:text-slate-300 text-sm">
               <label class="flex items-center gap-3 cursor-pointer">
                 <input type="radio" value="Herkes" v-model="profilePrivacy" class="accent-red-600" />
                 <span>Herkes</span>
@@ -142,28 +156,31 @@
             </div>
           </div>
 
+
           <!-- Hesap Ayarları -->
           <div class="mb-6">
-            <label class="block text-sm font-semibold mb-3 text-gray-700">Hesap Ayarları</label>
+            <label class="block text-sm font-semibold mb-3 text-gray-700 dark:text-slate-300">Hesap Ayarları</label>
             <div class="space-y-3">
               <input type="text" v-model="newUsername" placeholder="Yeni Kullanıcı Adı (İsteğe Bağlı)" 
-                     class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-red-600 text-sm" />
+                     class="w-full px-3 py-2 border dark:border-slate-600 rounded-lg focus:outline-none focus:border-red-600 text-sm bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white" />
               <input type="password" v-model="oldPassword" placeholder="Eski Şifre" 
-                     class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-red-600 text-sm" />
+                     class="w-full px-3 py-2 border dark:border-slate-600 rounded-lg focus:outline-none focus:border-red-600 text-sm bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white" />
               <input type="password" v-model="newPassword" placeholder="Yeni Şifre" 
-                     class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-red-600 text-sm" />
-              <p class="text-[10px] text-gray-500">* Şifre değiştirmek için eski şifrenizi girmelisiniz.</p>
+                     class="w-full px-3 py-2 border dark:border-slate-600 rounded-lg focus:outline-none focus:border-red-600 text-sm bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white" />
+              <p class="text-[10px] text-gray-500 dark:text-gray-400">* Şifre değiştirmek için eski şifrenizi girmelisiniz.</p>
             </div>
           </div>
+
 
           <!-- Kapatma ve Kaydet Butonları -->
           <div class="flex justify-end gap-3">
             <button
               @click="showSettingsModal = false"
-              class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition-colors"
+              class="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors text-sm font-medium"
             >
               Kapat
             </button>
+
             <button
               @click="saveProfile(); saveAccountSettings(); showSettingsModal = false"
               class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
@@ -177,42 +194,81 @@
 
     <!--takipçileri görme-->
     <transition name="zoom">
-      <div v-if="showFollowers" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 flex flex-col" @click="showFollowers=false">
-        <div class="bg-white p-4 rounded-lg w-80 max-h-[80vh] overflow-y-auto" @click.stop>
-          <h2 class="text-xl font-bold mb-4 text-center border-b pb-2">Followers</h2>
-          <div v-if="followers.length === 0" class="text-center text-gray-500 py-4">No followers yet.</div>
-          <div v-for="f in followers" :key="f.username" class="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors" @click="goToProfile(f.username)">
-            <img :src="f.photo || defaultPhoto" class="w-10 h-10 rounded-full object-cover border border-gray-300" alt="profile" />
-            <span class="font-medium">{{ f.username }}</span>
+      <div v-if="showFollowers" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 p-4" @click="showFollowers=false">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl w-80 max-h-[80vh] overflow-y-auto shadow-2xl border border-gray-100 dark:border-slate-700" @click.stop>
+          <h2 class="text-xl font-bold mb-5 text-center border-b dark:border-slate-700 pb-3 text-black dark:text-white">Takipçiler</h2>
+          <div v-if="followers.length === 0" class="text-center text-gray-500 dark:text-gray-400 py-8 text-sm">Henüz takipçiniz yok.</div>
+          <div v-for="f in followers" :key="f.username" class="flex items-center gap-3 p-2.5 hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-xl cursor-pointer transition-colors group" @click="goToProfile(f.username)">
+            <img :src="f.photo || defaultPhoto" class="w-10 h-10 rounded-full object-cover border-2 border-gray-100 dark:border-slate-600 group-hover:border-red-500 transition-all" alt="profile" />
+            <span class="font-semibold text-gray-800 dark:text-slate-200 group-hover:text-red-600">{{ f.username }}</span>
           </div>
         </div>
       </div>
     </transition>
+
 
     <!--takip etiklerimi görme-->
     <transition name="zoom">
-      <div v-if="showFollowing" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 flex flex-col" @click="showFollowing=false">
-        <div class="bg-white p-4 rounded-lg w-80 max-h-[80vh] overflow-y-auto" @click.stop>
-          <h2 class="text-xl font-bold mb-4 text-center border-b pb-2">Following</h2>
-          <div v-if="following.length === 0" class="text-center text-gray-500 py-4">Not following anyone yet.</div>
-          <div v-for="f in following" :key="f.username" class="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors" @click="goToProfile(f.username)">
-            <img :src="f.photo || defaultPhoto" class="w-10 h-10 rounded-full object-cover border border-gray-300" alt="profile" />
-            <span class="font-medium">{{ f.username }}</span>
+      <div v-if="showFollowing" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 p-4" @click="showFollowing=false">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl w-80 max-h-[80vh] overflow-y-auto shadow-2xl border border-gray-100 dark:border-slate-700" @click.stop>
+          <h2 class="text-xl font-bold mb-5 text-center border-b dark:border-slate-700 pb-3 text-black dark:text-white">Takip Edilenler</h2>
+          <div v-if="following.length === 0" class="text-center text-gray-500 dark:text-gray-400 py-8 text-sm">Henüz kimseyi takip etmiyorsunuz.</div>
+          <div v-for="f in following" :key="f.username" class="flex items-center gap-3 p-2.5 hover:bg-gray-100 dark:hover:bg-slate-700/50 rounded-xl cursor-pointer transition-colors group" @click="goToProfile(f.username)">
+            <img :src="f.photo || defaultPhoto" class="w-10 h-10 rounded-full object-cover border-2 border-gray-100 dark:border-slate-600 group-hover:border-red-500 transition-all" alt="profile" />
+            <span class="font-semibold text-gray-800 dark:text-slate-200 group-hover:text-red-600">{{ f.username }}</span>
           </div>
         </div>
       </div>
     </transition>
 
+
+  <!-- Filtreleme Sekmeleri -->
+  <div class="w-full max-w-6xl mx-auto px-6 mt-12 flex justify-center">
+    <div class="flex flex-wrap justify-center gap-2 bg-gray-100 dark:bg-slate-800/80 p-1.5 rounded-xl border border-gray-200 dark:border-slate-700">
+      <button @click="activeTab = 'Tümü'" :class="activeTab === 'Tümü' ? 'bg-white dark:bg-slate-700 shadow-sm text-red-600 font-semibold' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium'" class="px-4 md:px-6 py-2 rounded-lg transition-all text-sm">Tümü</button>
+      <button @click="activeTab = 'Kitap İncelemesi'" :class="activeTab === 'Kitap İncelemesi' ? 'bg-white dark:bg-slate-700 shadow-sm text-red-600 font-semibold' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium'" class="px-4 md:px-6 py-2 rounded-lg transition-all text-sm">Kitaplar</button>
+      <button @click="activeTab = 'Şiir'" :class="activeTab === 'Şiir' ? 'bg-white dark:bg-slate-700 shadow-sm text-red-600 font-semibold' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium'" class="px-4 md:px-6 py-2 rounded-lg transition-all text-sm">Şiirler</button>
+      <button @click="activeTab = 'Duygu & Düşünce'" :class="activeTab === 'Duygu & Düşünce' ? 'bg-white dark:bg-slate-700 shadow-sm text-red-600 font-semibold' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium'" class="px-4 md:px-6 py-2 rounded-lg transition-all text-sm">Duygular</button>
+    </div>
+  </div>
+
   <!-- Kitap kartları -->
-  <div class="mt-20 grid grid-cols-3 gap-20 w-2/3 m-auto">
-    <div v-for="book in books" :key="book.id" class="relative rounded-2xl shadow-lg bg-red-100 p-6 transition-all duration-300">
-      <img :src="book.image" class="w-full h-40 object-cover mt-2 rounded-[5px]"  alt="book image" />
-      <div class="px-4 py-4 overflow-hidden">
-        <h2 class="text-xl font-bold mb-2">{{ book.title }}</h2>
-        <p class="text-gray-600 text-sm mb-4" :style="book.expanded ? 'max-height:none' : 'max-height:4rem; overflow:hidden;'">{{ book.description }}</p>
-        <button class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg" @click="book.expanded = !book.expanded">{{ book.expanded ? 'Show Less' : 'Read More' }}</button>
-        <button v-show="isOwner" @click="openEditBook(book)" class="bg-black text-white font-semibold py-2 px-4 rounded-lg ml-2">Edit</button>
-        <button v-show="isOwner" @click="deleteBook(book.id)" class="border border-black rounded-[5px] mt-3 px-[70px] py-1 font-semibold ">Delete</button>
+  <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-6xl mx-auto px-6 pb-20">
+    <div v-for="book in filteredProfileBooks" :key="book.id" class="relative rounded-2xl shadow-sm hover:shadow-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 transition-all duration-300 flex flex-col">
+      <img v-if="book.image" :src="book.image" class="w-full h-48 object-cover mt-2 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm"  alt="book image" />
+      <div class="px-2 py-4 overflow-hidden flex-1 flex flex-col">
+        <div class="flex justify-between items-start mb-2 gap-2">
+          <h2 class="text-xl font-bold text-black dark:text-white">{{ book.title }}</h2>
+          <span class="text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider shrink-0"
+                :class="{'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300': book.category === 'Şiir',
+                         'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300': book.category === 'Duygu & Düşünce',
+                         'bg-gray-100 text-gray-800 dark:bg-slate-700 dark:text-gray-300': book.category === 'Kitap İncelemesi'}">
+            {{ book.category }}
+          </span>
+        </div>
+        <p class="text-gray-600 dark:text-slate-300 text-sm mb-5 leading-relaxed" :style="book.expanded ? 'max-height:none' : 'max-height:4rem; overflow:hidden;'">{{ book.description }}</p>
+        
+        <!-- Repost Kutusu -->
+        <div v-if="book.repost_id && book.repost" @click="openOriginalPost(book.repost)" class="mb-5 border border-gray-200 dark:border-slate-700 rounded-xl p-4 bg-gray-50 dark:bg-slate-800/50 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700/80 transition-colors">
+           <div class="flex items-center gap-2 mb-2 w-max" @click.stop="goToProfile(book.repost.username)">
+              <img v-if="book.repost.user_photo" :src="book.repost.user_photo" class="w-5 h-5 rounded-full object-cover">
+              <i v-else class="fa-solid fa-circle-user text-xs text-gray-400"></i>
+              <span class="text-xs font-semibold text-gray-800 dark:text-slate-200 hover:text-red-600 transition-colors">{{ book.repost.username }}</span>
+           </div>
+           <div class="flex flex-col sm:flex-row gap-3">
+              <img v-if="book.repost.image" :src="book.repost.image" class="w-full sm:w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-slate-600 shadow-sm">
+              <div>
+                <h3 class="font-bold text-sm text-black dark:text-white mb-1">{{ book.repost.title }}</h3>
+                <p class="text-xs text-gray-600 dark:text-slate-400 line-clamp-2">{{ book.repost.description }}</p>
+              </div>
+           </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2 mt-auto">
+          <button class="bg-red-600 hover:bg-red-700 text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors" @click="book.expanded = !book.expanded">{{ book.expanded ? 'Daha Az Gör' : 'Devamını Oku' }}</button>
+          <button v-show="isOwner" @click="openEditBook(book)" class="bg-slate-800 dark:bg-slate-600 text-white hover:bg-slate-900 dark:hover:bg-gray-500 text-sm font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors">Düzenle</button>
+          <button v-show="isOwner" @click="deleteBook(book.id)" class="border border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm rounded-lg px-4 py-2 font-semibold transition-colors">Sil</button>
+        </div>
       </div>
     </div>
   </div>
@@ -220,19 +276,49 @@
   <!-- Kitap düzenleme modal -->
   <transition name="zoom">
     <div v-if="showEditBook" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50" @click="showEditBook = false">
-      <div class="bg-white p-6 rounded-lg w-80" @click.stop>
-        <div class="flex  block mb-2 font-medium">
-            <i class="fa-regular fa-image pt-1"></i>
-            <p class="pl-1">Book Image</p>
+      <div class="bg-white dark:bg-slate-800 p-8 rounded-xl w-96 shadow-2xl border border-gray-200 dark:border-slate-700" @click.stop>
+        <h2 class="text-xl font-bold mb-6 text-black dark:text-white">Kitabı Düzenle</h2>
+        <div class="flex items-center mb-2 font-medium text-gray-800 dark:text-slate-300">
+            <i class="fa-regular fa-image"></i>
+            <p class="pl-2">Kapak Fotoğrafı</p>
         </div>
-        <input type="file"   accept="image/*"   @change="e=>addBookImage(e,editingBook)"  class="pb-4">
-        <label class="block mb-2 font-medium">Book Name</label>
-        <input v-model="editingBook.title" type="text" class="w-full border border-gray-300 rounded px-2 py-1 mb-4" />
-        <label class="block mb-2 font-medium">Book Description</label>
-        <textarea v-model="editingBook.description" class="w-full border border-gray-300 rounded px-2 py-1 mb-4"></textarea>
-        <div class="flex justify-end gap-2">
-          <button class="px-4 py-1 rounded bg-black text-white" @click="saveEditedBook">Save</button>
+        <input type="file" accept="image/*" @change="e=>addBookImage(e,editingBook)" class="mb-5 block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 dark:file:bg-slate-700 dark:file:text-slate-300 transition-colors">
+        
+        <label class="block mb-2 font-medium text-sm text-gray-800 dark:text-slate-300">Kategori</label>
+        <select v-model="editingBook.category" class="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 mb-5 bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 appearance-none">
+          <option value="Kitap İncelemesi">Kitap İncelemesi</option>
+          <option value="Şiir">Şiir</option>
+          <option value="Duygu & Düşünce">Duygu & Düşünce</option>
+        </select>
+
+        <label class="block mb-2 font-medium text-sm text-gray-800 dark:text-slate-300">Başlık</label>
+        <input v-model="editingBook.title" type="text" class="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 mb-5 bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500" />
+        <label class="block mb-2 font-medium text-sm text-gray-800 dark:text-slate-300">Açıklama</label>
+        <textarea v-model="editingBook.description" rows="4" class="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 mb-6 bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"></textarea>
+        <div class="flex justify-end gap-3">
+          <button class="px-5 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-gray-900 dark:text-slate-200 font-semibold hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors" @click="showEditBook = false">İptal</button>
+          <button class="px-5 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors shadow-sm" @click="saveEditedBook">Kaydet</button>
         </div>
+      </div>
+    </div>
+  </transition>
+
+  <!-- Orijinal Gönderi Modal -->
+  <transition name="zoom">
+    <div v-if="showOriginalPostModal" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 p-4" @click="showOriginalPostModal = false">
+      <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl w-full max-w-2xl shadow-2xl border border-gray-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto" @click.stop>
+         <div class="flex justify-between items-center mb-6 border-b border-gray-100 dark:border-slate-700 pb-3">
+           <h2 class="text-xl font-bold text-black dark:text-white"><i class="fa-solid fa-book-open mr-2 text-red-500"></i>Orijinal Gönderi</h2>
+           <button @click="showOriginalPostModal = false" class="text-gray-500 hover:text-red-500 transition-colors"><i class="fa-solid fa-times text-2xl"></i></button>
+         </div>
+         
+         <p @click="goToProfile(viewingOriginalPost.username)" class="flex items-center cursor-pointer font-semibold text-lg mb-5 px-4 py-1.5 inline-flex bg-gray-100 dark:bg-slate-700 text-gray-900 dark:text-slate-200 hover:bg-red-600 dark:hover:bg-red-600 hover:text-white rounded-lg transition-colors w-max">
+            <img v-if="viewingOriginalPost.user_photo" :src="viewingOriginalPost.user_photo" class="w-8 h-8 rounded-full mr-2 object-cover border border-white">
+            <i v-else class="fa-solid fa-circle-user text-sm mr-2"></i>{{ viewingOriginalPost.username }}
+         </p>
+         <img v-if="viewingOriginalPost.image" class="w-full h-auto max-h-96 object-cover rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 mb-6" alt="book image" :src="viewingOriginalPost.image" />
+         <h2 class="text-2xl font-bold mb-3 text-black dark:text-white">{{ viewingOriginalPost.title }}</h2>
+         <p class="text-gray-600 dark:text-slate-300 text-base leading-relaxed whitespace-pre-wrap">{{ viewingOriginalPost.description }}</p>
       </div>
     </div>
   </transition>
@@ -257,10 +343,14 @@ const username = ref(props.username || localStorage.getItem('username') || '')
 const showModal = ref(false)
 const showEditModal = ref(false)
 const showEditBook = ref(false)
+const showOriginalPostModal = ref(false)
+const viewingOriginalPost = ref(null)
 const showSettingsModal = ref(false)
 const editingBook = ref({})
 const currentTheme = ref('light')
 const profilePrivacy = ref('Herkes')
+const activeTab = ref('Tümü')
+
 
 const firstname = ref('')
 const lastname = ref('')
@@ -317,6 +407,13 @@ const fetchProfile = async () => {
 }
 
 //profili düzenle ve kaydet
+
+
+const openOriginalPost = (repost) => {
+  viewingOriginalPost.value = repost;
+  showOriginalPostModal.value = true;
+};
+
 const saveProfile = async () => {
   try{
     const updatedProfile ={
@@ -441,9 +538,9 @@ const fetchBooks = async () => {
   }
 }
 
-// Kitap ekleme
+// Gönderi ekleme
 const addBook = async () => {
-  const newBook = { title: 'New Book', description: 'Book Description', username: username.value }
+  const newBook = { title: 'Yeni Gönderi', description: 'İçerik buraya gelecek...', username: username.value, category: 'Kitap İncelemesi' }
   try {
     const res = await fetch('http://localhost:8000/api/addBook', {
       method: 'POST',
@@ -621,6 +718,12 @@ watch(() => props.username, (newUser) => {
 // computed owner flag
 const isOwner = computed(() => username.value && username.value === localStorage.getItem('username'))
 
+const filteredProfileBooks = computed(() => {
+  if (activeTab.value === 'Tümü') return books.value
+  return books.value.filter(book => book.category === activeTab.value)
+})
+
+
 // Tema İşlemleri
 const loadTheme = () => {
   const savedTheme = localStorage.getItem('theme') || 'light'
@@ -659,59 +762,4 @@ onMounted(() => {
 .zoom-enter-active, .zoom-leave-active { transition: all 0.3s ease; }
 .zoom-enter-from, .zoom-leave-to { transform: scale(0.5); opacity: 0; }
 .zoom-enter-to, .zoom-leave-from { transform: scale(1); opacity: 1; }
-
-/* Dark Mode Stilleri */
-:global(.dark) {
-  background-color: #1a1a1a;
-  color: #f5f5f5;
-}
-
-:global(.dark) .bg-white {
-  background-color: #2d2d2d;
-  color: #f5f5f5;
-}
-
-:global(.dark) .text-black,
-:global(.dark) .text-gray-700,
-:global(.dark) .text-gray-600 {
-  color: #e3e3e3;
-}
-
-:global(.dark) .border-gray-300,
-:global(.dark) .border-gray-400 {
-  border-color: #404040;
-}
-
-:global(.dark) .bg-gray-200 {
-  background-color: #3a3a3a;
-  color: #f5f5f5;
-}
-
-:global(.dark) .bg-red-50 {
-  background-color: #2d1f1f;
-}
-
-:global(.dark) .bg-red-100 {
-  background-color: #3a2424;
-}
-
-:global(.dark) .bg-gray-100 {
-  background-color: #423131;
-}
-
-:global(.dark) input,
-:global(.dark) textarea {
-  background-color: #3a3a3a;
-  color: #f5f5f5;
-  border-color: #404040;
-}
-
-:global(.dark) button.border-black {
-  color: #f5f5f5;
-  border-color: #404040;
-}
-
-:global(.dark) button.border-black:hover {
-  background-color: #3a3a3a;
-}
 </style>

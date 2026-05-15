@@ -31,6 +31,8 @@ type Book struct {
 	Description string `json:"description"`
 	Image       string `json:"image"`
 	Username    string `json:"username"`
+	RepostID    int    `json:"repost_id,omitempty"`
+	Category    string `json:"category"`
 }
 type Like struct {
 	ID       int    `json:"id"`
@@ -90,6 +92,16 @@ func initDB() {
 	_, err = db.Exec(`ALTER TABLE books ADD COLUMN username TEXT`)
 	if err != nil {
 		log.Println("Books tablosuna username eklenemedi (muhtemelen zaten var):", err)
+	}
+	// repost_id sütunu yoksa ekle
+	_, err = db.Exec(`ALTER TABLE books ADD COLUMN repost_id INTEGER DEFAULT NULL`)
+	if err != nil {
+		log.Println("Books tablosuna repost_id eklenemedi (muhtemelen zaten var):", err)
+	}
+	// category sütunu yoksa ekle
+	_, err = db.Exec(`ALTER TABLE books ADD COLUMN category TEXT DEFAULT 'Kitap İncelemesi'`)
+	if err != nil {
+		log.Println("Books tablosuna category eklenemedi (muhtemelen zaten var):", err)
 	}
 
 	// Follow tablosu
@@ -376,7 +388,7 @@ func changeAccountSettingsHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Eski şifre yanlış", http.StatusUnauthorized)
 			return
 		}
-		
+
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 		if err != nil {
 			http.Error(w, "Şifre oluşturulamadı", http.StatusInternalServerError)
@@ -448,7 +460,19 @@ func addBookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := db.Exec("INSERT INTO books (title, description, image, username) VALUES (?, ?, ?, ?)", b.Title, b.Description, b.Image, b.Username)
+	var repostID interface{}
+	if b.RepostID > 0 {
+		repostID = b.RepostID
+	} else {
+		repostID = nil
+	}
+
+	category := b.Category
+	if category == "" {
+		category = "Kitap İncelemesi"
+	}
+
+	res, err := db.Exec("INSERT INTO books (title, description, image, username, repost_id, category) VALUES (?, ?, ?, ?, ?, ?)", b.Title, b.Description, b.Image, b.Username, repostID, category)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -477,21 +501,59 @@ func getBooksHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := db.Query("SELECT id, title, description, image FROM books WHERE username = ?", username)
+	rows, err := db.Query(`
+		SELECT 
+			b.id, b.title, b.description, b.image, b.category,
+			b.repost_id, rb.title, rb.description, rb.image, rb.username, rb.category,
+			(SELECT COALESCE(photo, '') FROM users WHERE username = rb.username)
+		FROM books b
+		LEFT JOIN books rb ON b.repost_id = rb.id
+		WHERE b.username = ? ORDER BY b.id DESC
+	`, username)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
-	var books []Book
+	var books []map[string]interface{}
 	for rows.Next() {
-		var b Book
-		if err := rows.Scan(&b.ID, &b.Title, &b.Description, &b.Image); err != nil {
+		var id int
+		var title, description, image string
+		var category sql.NullString
+		var repostID sql.NullInt64
+		var repTitle, repDesc, repImage, repUsername, repUserPhoto, repCategory sql.NullString
+
+		if err := rows.Scan(&id, &title, &description, &image, &category, &repostID, &repTitle, &repDesc, &repImage, &repUsername, &repCategory, &repUserPhoto); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		books = append(books, b)
+
+		catStr := "Kitap İncelemesi"
+		if category.Valid && category.String != "" {
+			catStr = category.String
+		}
+
+		book := map[string]interface{}{
+			"id":          id,
+			"title":       title,
+			"description": description,
+			"image":       image,
+			"category":    catStr,
+			"repost_id":   nil,
+		}
+		if repostID.Valid {
+			book["repost_id"] = repostID.Int64
+			book["repost"] = map[string]string{
+				"title":       repTitle.String,
+				"description": repDesc.String,
+				"image":       repImage.String,
+				"username":    repUsername.String,
+				"category":    repCategory.String,
+				"user_photo":  repUserPhoto.String,
+			}
+		}
+		books = append(books, book)
 	}
 	if err := rows.Err(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -533,7 +595,12 @@ func updateBookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := db.Exec("UPDATE books SET title = ?, description = ?, image = ? WHERE id = ? AND username = ?", b.Title, b.Description, b.Image, b.ID, b.Username)
+	category := b.Category
+	if category == "" {
+		category = "Kitap İncelemesi"
+	}
+
+	_, err := db.Exec("UPDATE books SET title = ?, description = ?, image = ?, category = ? WHERE id = ? AND username = ?", b.Title, b.Description, b.Image, category, b.ID, b.Username)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -653,16 +720,18 @@ func getAllBooksHandler(w http.ResponseWriter, r *http.Request) {
 
 	query := `
         SELECT 
-		b.id, b.title, b.description, b.image, b.username, 
+		b.id, b.title, b.description, b.image, b.username, b.category,
 		COALESCE(u.photo, ''),
 		(SELECT COUNT(*) FROM likes WHERE book_id=b.id) as like_count,
 		(SELECT COUNT(*) FROM likes WHERE book_id=b.id AND username=?) as is_liked,
-		(SELECT COUNT(*) FROM comments WHERE book_id=b.id) as comment_count
+		(SELECT COUNT(*) FROM comments WHERE book_id=b.id) as comment_count,
+		b.repost_id, rb.title, rb.description, rb.image, rb.username, rb.category,
+		(SELECT COALESCE(photo, '') FROM users WHERE username = rb.username)
         FROM books b 
         LEFT JOIN users u ON b.username = u.username
+	LEFT JOIN books rb ON b.repost_id = rb.id
         LEFT JOIN follow f ON f.follower = ? AND f.following = b.username AND f.status = 'accepted'
-        WHERE COALESCE(u.privacy, 'Herkes') = 'Herkes' OR b.username = ? OR f.id IS NOT NULL`
-
+        WHERE COALESCE(u.privacy, 'Herkes') = 'Herkes' OR b.username = ? OR f.id IS NOT NULL ORDER BY b.id DESC`
 	rows, err := db.Query(query, currentUser, currentUser, currentUser)
 	if err != nil {
 		respondJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
@@ -674,10 +743,20 @@ func getAllBooksHandler(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var id, likeCount, isLiked, commentCount int
 		var title, description, image, username, userPhoto string
-		if err := rows.Scan(&id, &title, &description, &image, &username, &userPhoto, &likeCount, &isLiked, &commentCount); err != nil {
+		var category sql.NullString
+		var repostID sql.NullInt64
+		var repTitle, repDesc, repImage, repUsername, repUserPhoto, repCategory sql.NullString
+
+		if err := rows.Scan(&id, &title, &description, &image, &username, &category, &userPhoto, &likeCount, &isLiked, &commentCount, &repostID, &repTitle, &repDesc, &repImage, &repUsername, &repCategory, &repUserPhoto); err != nil {
 			continue
 		}
-		books = append(books, map[string]interface{}{
+
+		catStr := "Kitap İncelemesi"
+		if category.Valid && category.String != "" {
+			catStr = category.String
+		}
+
+		book := map[string]interface{}{
 			"id":            id,
 			"title":         title,
 			"description":   description,
@@ -687,7 +766,90 @@ func getAllBooksHandler(w http.ResponseWriter, r *http.Request) {
 			"like_count":    likeCount,
 			"is_liked":      isLiked > 0,
 			"comment_count": commentCount,
-		})
+			"category":      catStr,
+			"repost_id":     nil,
+		}
+		if repostID.Valid {
+			book["repost_id"] = repostID.Int64
+			book["repost"] = map[string]string{
+				"title":       repTitle.String,
+				"description": repDesc.String,
+				"image":       repImage.String,
+				"username":    repUsername.String,
+				"user_photo":  repUserPhoto.String,
+			}
+		}
+		books = append(books, book)
+	}
+	respondJSON(w, http.StatusOK, books)
+}
+
+func getFollowingBooksHandler(w http.ResponseWriter, r *http.Request) {
+	currentUser := r.URL.Query().Get("currentUser")
+
+	query := `
+        SELECT 
+		b.id, b.title, b.description, b.image, b.username, b.category,
+		COALESCE(u.photo, ''),
+		(SELECT COUNT(*) FROM likes WHERE book_id=b.id) as like_count,
+		(SELECT COUNT(*) FROM likes WHERE book_id=b.id AND username=?) as is_liked,
+		(SELECT COUNT(*) FROM comments WHERE book_id=b.id) as comment_count,
+		b.repost_id, rb.title, rb.description, rb.image, rb.username,
+		(SELECT COALESCE(photo, '') FROM users WHERE username = rb.username)
+        FROM books b 
+        LEFT JOIN users u ON b.username = u.username
+		LEFT JOIN books rb ON b.repost_id = rb.id
+        JOIN follow f ON f.follower = ? AND f.following = b.username AND f.status = 'accepted'
+        ORDER BY b.id DESC`
+
+	rows, err := db.Query(query, currentUser, currentUser)
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	var books []map[string]interface{}
+	for rows.Next() {
+		var id, likeCount, isLiked, commentCount int
+		var title, description, image, username, userPhoto string
+		var category sql.NullString
+		var repostID sql.NullInt64
+		var repTitle, repDesc, repImage, repUsername, repUserPhoto, repCategory sql.NullString
+
+		if err := rows.Scan(&id, &title, &description, &image, &username, &category, &userPhoto, &likeCount, &isLiked, &commentCount, &repostID, &repTitle, &repDesc, &repImage, &repUsername, &repCategory, &repUserPhoto); err != nil {
+			continue
+		}
+
+		catStr := "Kitap İncelemesi"
+		if category.Valid && category.String != "" {
+			catStr = category.String
+		}
+
+		book := map[string]interface{}{
+			"id":            id,
+			"title":         title,
+			"description":   description,
+			"image":         image,
+			"username":      username,
+			"user_photo":    userPhoto,
+			"like_count":    likeCount,
+			"is_liked":      isLiked > 0,
+			"comment_count": commentCount,
+			"category":      catStr,
+			"repost_id":     nil,
+		}
+		if repostID.Valid {
+			book["repost_id"] = repostID.Int64
+			book["repost"] = map[string]string{
+				"title":       repTitle.String,
+				"description": repDesc.String,
+				"image":       repImage.String,
+				"username":    repUsername.String,
+				"user_photo":  repUserPhoto.String,
+			}
+		}
+		books = append(books, book)
 	}
 	respondJSON(w, http.StatusOK, books)
 }
@@ -1072,6 +1234,7 @@ func main() {
 	http.Handle("/api/getNotifications", enableCORS(http.HandlerFunc(getNotificationsHandler)))
 
 	http.Handle("/api/getAllBooks", enableCORS(http.HandlerFunc(getAllBooksHandler)))
+	http.Handle("/api/getFollowingBooks", enableCORS(http.HandlerFunc(getFollowingBooksHandler)))
 
 	http.Handle("/api/debugBooksColumns", enableCORS(http.HandlerFunc(debugBooksColumnsHandler)))
 
@@ -1128,7 +1291,7 @@ func startDirectHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		id, _ := res.LastInsertId()
 		convID = int(id)
-		
+
 		db.Exec("INSERT INTO conversation_members(conversation_id, username) VALUES(?, ?)", convID, req.CurrentUser)
 		db.Exec("INSERT INTO conversation_members(conversation_id, username) VALUES(?, ?)", convID, req.TargetUser)
 	} else if err != nil {

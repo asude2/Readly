@@ -1,2 +1,4 @@
 readly-backend/users.db
 readly-frontend/node_modules
+ *.exe
+main

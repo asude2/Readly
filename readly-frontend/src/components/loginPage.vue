@@ -13,33 +13,33 @@
         <div class="cover-back"></div>
       </div>
 
-      <div class="book-content max-w-md mx-auto p-10 border rounded-[2px] shadow-lg bg-stone-200">
-        <h1 class="text-black text-2xl p-5">
-          <i class="fa-solid fa-arrow-left pr-5 cursor-pointer" @click="logoutApp"></i>
+      <div class="book-content w-full max-w-md mx-auto p-10 border border-gray-200 dark:border-slate-700 rounded-xl shadow-2xl bg-white dark:bg-slate-800 transition-colors duration-300">
+        <h1 class="text-black dark:text-white text-3xl font-bold mb-8 flex items-center">
+          <i class="fa-solid fa-arrow-left pr-4 cursor-pointer hover:text-red-600 transition-colors" @click="logoutApp"></i>
           Giriş Yap
         </h1>
 
-        <div v-if="message" class="p-4 mb-4 text-sm rounded-lg" :class="isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'">
+        <div v-if="message" class="p-4 mb-6 text-sm rounded-lg border" :class="isError ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400' : 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400'">
           {{ message }}
         </div>
 
-        <form @submit.prevent="handleLogin" class="flex flex-col">
-          <div class="p-4 flex flex-col">
-            <p class="text-black">Kullanıcı Adınız</p>
-            <input v-model="form.username" type="text" placeholder="kullanıcı adı" class=" border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" required>
+        <form @submit.prevent="handleLogin" class="flex flex-col space-y-5">
+          <div class="flex flex-col">
+            <label class="block text-sm font-medium text-gray-800 dark:text-slate-300 mb-1.5">Kullanıcı Adınız</label>
+            <input v-model="form.username" type="text" placeholder="Kullanıcı adı" class="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200" required>
           </div>
-          <div class="p-4 flex flex-col">
-            <p class="text-black">Şifreniz</p>
-            <input v-model="form.password" type="password" placeholder="şifre" class=" border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" required>
+          <div class="flex flex-col">
+            <label class="block text-sm font-medium text-gray-800 dark:text-slate-300 mb-1.5">Şifreniz</label>
+            <input v-model="form.password" type="password" placeholder="Şifre" class="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2.5 bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200" required>
           </div>
-          <div class=" flex justify-end gap-2">
-            <button type="button" class=" text-black p-2 rounded-[20px] border border-black hover:bg-white hover:border-white transition-colors duration-300 ease-in-out text-sm">Şifremi Unuttum</button>
-            <button type="submit" :disabled="isLoading" class="text-red-600 border border-red-600 bg-red-200 font-medium p-2 pl-6 pr-6 rounded-[20px] bg-transparent hover:bg-[#b91c1c] hover:text-white transition-colors duration-300 ease-in-out">
+          <div class="flex items-center justify-between pt-2">
+            <button type="button" class="text-sm font-medium text-gray-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200">Şifremi Unuttum</button>
+            <button type="submit" :disabled="isLoading" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 px-8 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
               {{ isLoading ? 'Giriş Yapılıyor...' : 'Giriş Yap' }}
             </button>
           </div>
-          <div class="text-center">
-            <button @click.prevent="goToRegister" class="m-5 pt-5 text-black font-bold rounded-[10px] hover:text-[#b91c1c] transition transition-colors duration-300 ease-in-out text-sm">HESABINIZ YOK MU? HEMEN KAYDOLUN</button>
+          <div class="text-center mt-8 pt-4 border-t border-gray-200 dark:border-slate-700">
+            <button @click.prevent="goToRegister" class="text-sm font-semibold text-gray-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-500 transition-colors duration-300">Hesabınız yok mu? Hemen kaydolun</button>
           </div>
         </form>
       </div>
@@ -141,11 +141,12 @@ export default {
   top: 0;
   width: 50%; /* Her kapak formun yarısını kaplar */
   height: 100%;
-  background: #b91c1c; /* Daha koyu bir kırmızı (kitap kapağı rengi) */
+  background: #b91c1c; /* Koyu kırmızı (kitap kapağı rengi) */
   transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
   transform-style: preserve-3d;
   z-index: 10; /* Formun üzerinde durmaları için */
-  border: 1px solid #ffffff;
+  border: 1px solid #7f1d1d;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
 }
 
 /* Sol Kapak */
@@ -171,8 +172,11 @@ export default {
 }
 
 .cover-back {
-  background: #d8d8d8; /* Formun rengine yakın, açılan iç kısım */
+  background: #e2e8f0; /* Formun rengine yakın, açılan iç kısım */
   transform: rotateY(180deg); /* Arka yüzü 180 derece döndür */
+}
+:global(.dark) .cover-back {
+  background: #1e293b;
 }
 
 /* --- Animasyon Tetikleyicileri (Vue state'ine bağlı) --- */

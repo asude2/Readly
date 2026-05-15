@@ -1,48 +1,48 @@
 <template>
-  <div class="max-w-md mx-auto mt-5 px-6 py-10 border rounded-lg shadow-lg bg-stone-200">
-    <h1 class="text-black text-2xl p-5 flex items-center">
-      <i class="fa-solid fa-arrow-left pr-5 cursor-pointer"></i> Kayıt Ol
+  <div class="w-full max-w-md mx-auto mt-10 p-10 border border-gray-200 dark:border-slate-700 rounded-xl shadow-2xl bg-white dark:bg-slate-800 transition-colors duration-300">
+    <h1 class="text-black dark:text-white text-3xl font-bold mb-8 flex items-center">
+      <i class="fa-solid fa-arrow-left pr-4 cursor-pointer hover:text-red-600 transition-colors" @click="goToLogin"></i> Kayıt Ol
     </h1>
 
     <form @submit.prevent="submitRegistration" class="flex flex-col space-y-4">
       <div class="flex flex-col">
-        <label class="text-black" for="firstname">Ad</label>
-        <input v-model="form.firstname" id="firstname" type="text" placeholder="Adınız" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400">
+        <label class="block text-sm font-medium text-gray-800 dark:text-slate-300 mb-1.5" for="firstname">Ad</label>
+        <input v-model="form.firstname" id="firstname" type="text" placeholder="Adınız" class="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200">
       </div>
 
       <div class="flex flex-col">
-        <label class="text-black" for="lastname">Soyad</label>
-        <input v-model="form.lastname" id="lastname" type="text" placeholder="Soyadınız" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400">
+        <label class="block text-sm font-medium text-gray-800 dark:text-slate-300 mb-1.5" for="lastname">Soyad</label>
+        <input v-model="form.lastname" id="lastname" type="text" placeholder="Soyadınız" class="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200">
       </div>
 
       <div class="flex flex-col">
-        <label class="text-black" for="email">E-posta</label>
-        <input v-model="form.email" id="email" type="email" placeholder="E-posta" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400">
+        <label class="block text-sm font-medium text-gray-800 dark:text-slate-300 mb-1.5" for="email">E-posta</label>
+        <input v-model="form.email" id="email" type="email" placeholder="E-posta" class="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200">
       </div>
 
       <div class="flex flex-col">
-        <label class="text-black" for="username">Kullanıcı Adı</label>
-        <input v-model="form.username" id="username" type="text" placeholder="Kullanıcı Adınız" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400">
+        <label class="block text-sm font-medium text-gray-800 dark:text-slate-300 mb-1.5" for="username">Kullanıcı Adı</label>
+        <input v-model="form.username" id="username" type="text" placeholder="Kullanıcı Adınız" class="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200">
       </div>
 
       <div class="flex flex-col">
-        <label class="text-black" for="password">Şifre</label>
-        <input v-model="form.password" id="password" type="password" placeholder="Şifre" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400">
+        <label class="block text-sm font-medium text-gray-800 dark:text-slate-300 mb-1.5" for="password">Şifre</label>
+        <input v-model="form.password" id="password" type="password" placeholder="Şifre" class="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200">
       </div>
 
       <div class="flex flex-col">
-        <label class="text-black" for="password2">Şifre Tekrar</label>
-        <input v-model="form.password2" id="password2" type="password" placeholder="Şifre Tekrar" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400">
+        <label class="block text-sm font-medium text-gray-800 dark:text-slate-300 mb-1.5" for="password2">Şifre Tekrar</label>
+        <input v-model="form.password2" id="password2" type="password" placeholder="Şifre Tekrar" class="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200">
       </div>
 
       <div class="flex flex-col">
-        <label class="text-black" for="dob">Doğum Tarihi</label>
-        <input v-model="form.dob" id="dob" type="date" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400">
+        <label class="block text-sm font-medium text-gray-800 dark:text-slate-300 mb-1.5" for="dob">Doğum Tarihi</label>
+        <input v-model="form.dob" id="dob" type="date" class="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200">
       </div>
 
       <div class="flex flex-col">
-        <label class="text-black" for="gender">Cinsiyet</label>
-        <select v-model="form.gender" id="gender" class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400">
+        <label class="block text-sm font-medium text-gray-800 dark:text-slate-300 mb-1.5" for="gender">Cinsiyet</label>
+        <select v-model="form.gender" id="gender" class="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200">
           <option value="">Seçiniz</option>
           <option value="male">Erkek</option>
           <option value="female">Kadın</option>
@@ -50,19 +50,21 @@
         </select>
       </div>
 
-      <div v-if="message" class="p-4 mb-4 text-sm rounded-lg" :class="isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'">
+      <div v-if="message" class="p-4 mb-2 text-sm rounded-lg border" :class="isError ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400' : 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400'">
         {{ message }}
       </div>
 
-      <div class="flex justify-end gap-2">
-        <button type="submit" :disabled="isLoading" class="border border-[#b91c1c] text-[#b91c1c] font-medium px-6 py-2 rounded-[20px] hover:bg-[#b91c1c] hover:text-white transition-colors disabled:bg-gray-400">
+      <div class="flex justify-end pt-2">
+        <button type="submit" :disabled="isLoading" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 px-8 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
           {{ isLoading ? 'Kaydediliyor...' : 'Kayıt Ol' }}
         </button>
       </div>
 
-      <p class="text-black font-bold text-center pt-5 cursor-pointer hover:text-[#b91c1c] transition transition-colors duration-300 ease-in-out" @click.prevent="goToLogin">
-        Zaten Hesabınız Var mı? Giriş Yap
-      </p>
+      <div class="text-center mt-6 pt-4 border-t border-gray-200 dark:border-slate-700">
+        <p class="text-sm font-semibold text-gray-600 dark:text-slate-400 cursor-pointer hover:text-red-600 dark:hover:text-red-500 transition-colors duration-300" @click.prevent="goToLogin">
+          Zaten Hesabınız Var mı? Giriş Yap
+        </p>
+      </div>
     </form>
   </div>
 </template>

@@ -1,35 +1,35 @@
 <template>
-  <div class="h-screen bg-gray-50 flex flex-col">
+  <div class="h-screen bg-gray-50 dark:bg-slate-900 flex flex-col transition-colors duration-300">
     <!-- HEADER -->
-    <div class="bg-white shadow-sm px-6 py-4 flex justify-between items-center z-10 relative">
-      <h1 @click="goHome" class="text-red-700 text-3xl font-medium italic font-serif flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+    <div class="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 shadow-sm px-6 py-4 flex justify-between items-center z-10 relative transition-colors">
+      <h1 @click="goHome" class="text-red-600 text-3xl font-medium italic font-serif flex items-center cursor-pointer hover:opacity-80 transition-opacity">
         Readly
         <i class="fa-solid fa-book-open text-2xl px-2"></i>
       </h1>
-      <h2 class="text-xl font-semibold text-gray-800">Mesajlar</h2>
-      <i @click="goHome" class="fa-regular fa-circle-left text-3xl cursor-pointer hover:text-red-700 transition-colors"></i>
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-slate-100">Mesajlar</h2>
+      <i @click="goHome" class="fa-regular fa-circle-left text-3xl text-gray-600 dark:text-gray-400 cursor-pointer hover:text-red-600 transition-colors"></i>
     </div>
 
     <!-- MAIN CHAT AREA -->
     <div class="flex-1 flex overflow-hidden">
       
       <!-- SIDEBAR: Conversations List -->
-      <div class="w-1/3 bg-white border-r flex flex-col">
-        <div class="p-4 border-b flex justify-between items-center bg-gray-50">
-          <h3 class="font-semibold text-gray-700">Sohbetler</h3>
-          <button @click="showNewChatModal = true" class="bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-colors" title="Yeni Mesaj">
+      <div class="w-1/3 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 flex flex-col transition-colors">
+        <div class="p-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center bg-gray-50 dark:bg-slate-800/50">
+          <h3 class="font-semibold text-gray-800 dark:text-slate-200">Sohbetler</h3>
+          <button @click="showNewChatModal = true" class="bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-colors shadow-sm" title="Yeni Mesaj">
             <i class="fa-solid fa-pen-to-square"></i>
           </button>
         </div>
 
         <div class="flex-1 overflow-y-auto">
-          <div v-if="conversations.length === 0" class="p-4 text-center text-gray-500 text-sm mt-10">
+          <div v-if="conversations.length === 0" class="p-4 text-center text-gray-500 dark:text-gray-400 text-sm mt-10">
             Henüz bir sohbetiniz yok. Sağ üstten yeni bir sohbet başlatın.
           </div>
           <div v-for="conv in conversations" :key="conv.id" 
                @click="selectConversation(conv)"
-               class="p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors flex items-center gap-3"
-               :class="{'bg-red-50': activeConversation?.id === conv.id}">
+               class="p-4 border-b border-gray-100 dark:border-slate-700/50 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
+               :class="{'bg-red-50 dark:bg-red-900/20': activeConversation?.id === conv.id}">
             
             <div class="relative">
               <img v-if="conv.type === 'direct' && conv.otherPhoto" :src="conv.otherPhoto" class="w-12 h-12 rounded-full object-cover border" />
@@ -58,15 +58,15 @@
       </div>
 
       <!-- CHAT VIEW -->
-      <div class="flex-1 flex flex-col bg-[#f0f2f5] relative">
-        <div v-if="!activeConversation" class="absolute inset-0 flex items-center justify-center flex-col text-gray-400">
+      <div class="flex-1 flex flex-col bg-gray-50 dark:bg-slate-900/50 relative transition-colors">
+        <div v-if="!activeConversation" class="absolute inset-0 flex items-center justify-center flex-col text-gray-400 dark:text-gray-500">
           <i class="fa-regular fa-comments text-6xl mb-4"></i>
           <p class="text-lg">Bir sohbet seçin veya yeni bir mesaj başlatın.</p>
         </div>
 
         <template v-else>
           <!-- Chat Header -->
-          <div class="px-6 py-4 bg-white border-b flex items-center gap-4 z-10 shadow-sm cursor-pointer hover:bg-gray-50 transition-colors" @click="handleHeaderClick">
+          <div class="px-6 py-4 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex items-center gap-4 z-10 shadow-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors" @click="handleHeaderClick">
             <img v-if="activeConversation.type === 'direct' && activeConversation.otherPhoto" :src="activeConversation.otherPhoto" class="w-10 h-10 rounded-full object-cover border" />
             <div v-else-if="activeConversation.type === 'direct'" class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center border">
                <i class="fa-solid fa-user text-gray-500"></i>
@@ -82,12 +82,12 @@
 
           <!-- Messages -->
           <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-3" ref="messagesContainer">
-             <div v-if="messages.length === 0" class="text-center text-gray-400 my-auto text-sm">
+             <div v-if="messages.length === 0" class="text-center text-gray-400 dark:text-gray-500 my-auto text-sm">
                 İlk mesajı siz gönderin!
              </div>
              <div v-for="msg in messages" :key="msg.id" 
                   class="max-w-[70%] rounded-2xl px-4 py-2 flex flex-col"
-                  :class="msg.senderUsername === currentUser ? 'bg-red-600 text-white self-end rounded-tr-sm' : 'bg-white border text-gray-800 self-start rounded-tl-sm shadow-sm'">
+                  :class="msg.senderUsername === currentUser ? 'bg-red-600 text-white self-end rounded-tr-sm shadow-sm' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-slate-100 self-start rounded-tl-sm shadow-sm'">
                 <span v-if="activeConversation.type === 'group' && msg.senderUsername !== currentUser" 
                       @click="goToProfile(msg.senderUsername)"
                       class="text-[10px] font-bold text-red-700 mb-0.5 cursor-pointer hover:underline">{{ msg.senderUsername }}</span>
@@ -97,10 +97,10 @@
           </div>
 
           <!-- Message Input -->
-          <div class="p-4 bg-white border-t flex items-center gap-3">
+          <div class="p-4 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 flex items-center gap-3 transition-colors">
              <input type="text" v-model="newMessage" @keyup.enter="sendMessage"
                     placeholder="Bir mesaj yazın..." 
-                    class="flex-1 bg-gray-100 border-transparent rounded-full px-5 py-2.5 text-sm focus:outline-none focus:bg-white focus:border-red-400 border transition-colors" />
+                    class="flex-1 bg-gray-100 dark:bg-slate-700 border-transparent rounded-full px-5 py-2.5 text-sm text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-red-400 focus:ring-1 focus:ring-red-400 border transition-colors" />
              <button @click="sendMessage" :disabled="!newMessage.trim()"
                      class="bg-red-600 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                <i class="fa-solid fa-paper-plane text-sm"></i>
