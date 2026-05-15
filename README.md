@@ -110,25 +110,3 @@ Geliştirme sunucusunu başlatın:
 npm run dev
 
 
-## 📂 Proje Yapısı
-
-```text
-.
-├── readly-backend/          # Golang & SQLite Backend
-│   ├── main.go              # API Endpoint'leri ve Veritabanı Mantığı
-│   └── users.db             # Uygulama Veritabanı
-├── readly-frontend/         # Vue.js Frontend
-│   ├── public/              # Statik Varlıklar
-│   ├── src/
-│   │   ├── assets/          # CSS ve Görseller
-│   │   ├── components/      # Uygulama Sayfaları ve Bileşenleri
-│   │   │   ├── anasayfa.vue
-│   │   │   ├── loginPage.vue
-│   │   │   ├── profil.vue
-│   │   │   └── signupPage.vue
-│   │   ├── router/          # Sayfa Yönlendirmeleri
-│   │   ├── App.vue          # Kök Bileşen
-│   │   └── main.js          # Başlangıç Dosyası
-│   ├── index.html           # Ana HTML Şablonu
-│   └── package.json         # Bağımlılıklar ve Scriptler
-└── README.md                # Proje Dokümantasyonu

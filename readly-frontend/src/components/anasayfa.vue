@@ -31,7 +31,14 @@
                       Okurlar
                     </button>
                   </li>
+                  <li>
+                    <button @click="kitaplarAra" class="relative pb-1 hover:text-red-600 dark:hover:text-red-400 transition-colors" :class="{'text-red-600 dark:text-red-400 after:w-full': kitaplarGör, 'after:w-0': !kitaplarGör, 'after:bg-red-600 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:transition-all after:duration-300': true}">
+                      Kitaplar
+                    </button>
+                  </li>
                 </ul>
+
+
               </nav>
 
               <!-- Okur Arama Çubuğu -->
@@ -80,7 +87,18 @@
                   class="w-full bg-transparent text-black dark:text-white placeholder-gray-400 outline-none text-sm"
                 />
               </div>
+              <!-- Kitap Kataloğu Arama Çubuğu -->
+              <div v-if="kitaplarGör" class="flex items-center bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-5 py-2 mt-1 w-full focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/20 transition-all shadow-sm">
+                <i class="fa-solid fa-magnifying-glass text-gray-400 mr-3"></i>
+                <input
+                  v-model="searchCatalogQuery"
+                  type="text"
+                  placeholder="Katalogda kitap ara..."
+                  class="w-full bg-transparent text-black dark:text-white placeholder-gray-400 outline-none text-sm"
+                />
+              </div>
             </div>
+
 
             <!-- Sağ Taraf: İkonlar ve Profil -->
             <div class="flex items-center gap-4">
@@ -153,7 +171,7 @@
 
         <!--------------------------------------------CONTENT KISMI-------------------------------------------------------------------->
         <!-- Filtreleme Sekmeleri -->
-        <div class="w-full max-w-5xl mx-auto px-6 mt-8 flex justify-center">
+        <div v-if="kitapGör || takipGör" class="w-full max-w-5xl mx-auto px-6 mt-8 flex justify-center">
           <div class="flex flex-wrap justify-center gap-2 bg-gray-100 dark:bg-slate-800/80 p-1.5 rounded-xl border border-gray-200 dark:border-slate-700">
             <button @click="activeTab = 'Tümü'" :class="activeTab === 'Tümü' ? 'bg-white dark:bg-slate-700 shadow-sm text-red-600 font-semibold' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium'" class="px-4 md:px-6 py-2 rounded-lg transition-all text-sm">Tümü</button>
             <button @click="activeTab = 'Kitap İncelemesi'" :class="activeTab === 'Kitap İncelemesi' ? 'bg-white dark:bg-slate-700 shadow-sm text-red-600 font-semibold' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium'" class="px-4 md:px-6 py-2 rounded-lg transition-all text-sm">Kitaplar</button>
@@ -162,7 +180,48 @@
           </div>
         </div>
 
-        <div class="flex flex-col justify-center items-center max-w-5xl mx-auto mt-4 pb-20">
+        <!-- Kitap Kataloğu Görünümü -->
+        <div v-if="kitaplarGör" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pb-20 w-full">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <div v-for="book in filteredCatalogBooks" :key="book.id" class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-slate-700 overflow-hidden group">
+              <div class="relative aspect-[3/4] overflow-hidden">
+                <img :src="book.image" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" :alt="book.title" />
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                  <p class="text-white text-xs line-clamp-3">{{ book.description }}</p>
+                </div>
+              </div>
+              <div class="p-5">
+                <h3 class="font-bold text-gray-900 dark:text-white mb-1 line-clamp-1">{{ book.title }}</h3>
+                <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">{{ book.author }}</p>
+                
+                <div class="flex flex-col gap-3 pt-3 border-t border-gray-100 dark:border-slate-700">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1 text-yellow-500">
+                      <i v-for="i in 5" :key="i" class="fa-star" :class="i <= Math.round(book.avg_rating) ? 'fa-solid' : 'fa-regular'"></i>
+                    </div>
+                    <span class="text-xs font-bold text-gray-600 dark:text-gray-400">{{ book.avg_rating ? book.avg_rating.toFixed(1) : '0.0' }} ({{ book.rating_count }})</span>
+                  </div>
+                  
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] uppercase tracking-wider font-bold text-gray-400">Senin Puanın:</span>
+                    <div class="flex items-center gap-1">
+                      <i v-for="i in 5" :key="i" 
+                         @click="submitRating(book, i)"
+                         class="fa-star cursor-pointer transition-colors" 
+                         :class="[i <= (book.temp_rating || book.user_rating) ? 'fa-solid text-red-500' : 'fa-regular text-gray-300 dark:text-gray-600',
+                                 'hover:text-red-400']"
+                         @mouseenter="book.temp_rating = i"
+                         @mouseleave="book.temp_rating = null"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="kitapGör || takipGör" class="flex flex-col justify-center items-center max-w-5xl mx-auto mt-4 pb-20">
+
 
           <div v-for="book in filteredBooks" :key="book.id" class="rounded-2xl shadow-sm hover:shadow-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 transition-all duration-300 w-full mb-8 relative justify-center">
             <p @click="goUsersProfile(book.username)" class="flex items-center cursor-pointer font-semibold text-lg mb-6 mt-2 px-4 py-1.5 inline-flex bg-gray-100 dark:bg-slate-700 text-gray-900 dark:text-slate-200 hover:bg-red-600 dark:hover:bg-red-600 hover:text-white rounded-lg transition-colors">
@@ -333,12 +392,16 @@ const searchQuery=ref('')
 const okurGör=ref(false)
 const kitapGör=ref(true)
 const takipGör=ref(false)
+const kitaplarGör=ref(false)
 const books=ref([])
+const catalogBooks=ref([])
 const searchBookQuery = ref("")
+const searchCatalogQuery = ref("")
 const activeTab = ref('Tümü')
 
 const pendingRequests = ref([])
 const acceptedFollows = ref([])
+
 
 const showRepostModal = ref(false)
 const repostingBook = ref(null)
@@ -378,6 +441,15 @@ const filteredBooks = computed(() => {
   
   return result
 })
+
+const filteredCatalogBooks = computed(() => {
+  if (!searchCatalogQuery.value) return catalogBooks.value
+  return catalogBooks.value.filter(book =>
+    book.title.toLowerCase().includes(searchCatalogQuery.value.toLowerCase()) ||
+    book.author.toLowerCase().includes(searchCatalogQuery.value.toLowerCase())
+  )
+})
+
 
 
 
@@ -500,20 +572,63 @@ const follow = async (targetUsername, isFollowing, isPending) => {
 const okurAra=()=>{
   kitapGör.value=false
   takipGör.value=false
+  kitaplarGör.value=false
   okurGör.value=true
 }
 const kitapAra=()=>{
   okurGör.value=false
   takipGör.value=false
+  kitaplarGör.value=false
   kitapGör.value=true
   fetchAllBooks()
 }
 const takipAra=()=>{
   okurGör.value=false
   kitapGör.value=false
+  kitaplarGör.value=false
   takipGör.value=true
   fetchFollowingBooks()
 }
+const kitaplarAra=()=>{
+  okurGör.value=false
+  kitapGör.value=false
+  takipGör.value=false
+  kitaplarGör.value=true
+  fetchCatalogBooks()
+}
+
+const fetchCatalogBooks = async () => {
+  try {
+    const res = await fetch(`http://localhost:8000/api/catalog/books?currentUser=${username.value}`)
+    const data = await res.json()
+    if (res.ok) {
+      catalogBooks.value = data.map(b => ({...b, temp_rating: null}))
+    }
+  } catch (err) {
+    console.error('Katalog kitapları fetch hatası:', err)
+  }
+}
+
+const submitRating = async (book, rating) => {
+  try {
+    const res = await fetch('http://localhost:8000/api/catalog/rate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: username.value,
+        book_id: book.id,
+        rating: rating
+      })
+    })
+    if (res.ok) {
+      // Refresh only this book's data or all catalog
+      fetchCatalogBooks()
+    }
+  } catch (err) {
+    console.error('Puanlama hatası:', err)
+  }
+}
+
 
 
 const fetchAllBooks= async () => {

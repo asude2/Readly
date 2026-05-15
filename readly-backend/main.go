@@ -46,6 +46,25 @@ type Comment struct {
 	Content  string `json:"content"`
 }
 
+type CatalogBook struct {
+	ID          int     `json:"id"`
+	Title       string  `json:"title"`
+	Author      string  `json:"author"`
+	Description string  `json:"description"`
+	Image       string  `json:"image"`
+	AvgRating   float64 `json:"avg_rating"`
+	UserRating  int     `json:"user_rating"`
+	RatingCount int     `json:"rating_count"`
+}
+
+type Rating struct {
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	BookID   int    `json:"book_id"`
+	Rating   int    `json:"rating"`
+}
+
+
 //! MODELLER END ----------------------------------------------------------------------------------
 
 var db *sql.DB
@@ -183,7 +202,36 @@ func initDB() {
 	if err != nil {
 		log.Fatal("Messages tablosunu oluşturma hatası:", err)
 	}
+
+	// Katalog Kitapları
+	createCatalogBooksTable := `CREATE TABLE IF NOT EXISTS catalog_books (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		title TEXT NOT NULL,
+		author TEXT,
+		description TEXT,
+		image TEXT
+	);`
+	_, err = db.Exec(createCatalogBooksTable)
+	if err != nil {
+		log.Fatal("CatalogBooks tablosunu oluşturma hatası:", err)
+	}
+
+	// Puanlamalar
+	createRatingsTable := `CREATE TABLE IF NOT EXISTS ratings (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		username TEXT NOT NULL,
+		book_id INTEGER NOT NULL,
+		rating INTEGER NOT NULL,
+		UNIQUE(username, book_id)
+	);`
+	_, err = db.Exec(createRatingsTable)
+	if err != nil {
+		log.Fatal("Ratings tablosunu oluşturma hatası:", err)
+	}
+
+	seedCatalogBooks()
 }
+
 
 //! TABLOLARIN OLUŞTURULMASI END ----------------------------------------------------------------------------------
 
@@ -1255,6 +1303,9 @@ func main() {
 	http.Handle("/api/messages/groupMembers", enableCORS(http.HandlerFunc(getGroupMembersHandler)))
 	http.Handle("/api/messages/addGroupMember", enableCORS(http.HandlerFunc(addGroupMemberHandler)))
 	http.Handle("/api/messages/removeGroupMember", enableCORS(http.HandlerFunc(removeGroupMemberHandler)))
+	http.Handle("/api/catalog/books", enableCORS(http.HandlerFunc(getCatalogBooksHandler)))
+	http.Handle("/api/catalog/rate", enableCORS(http.HandlerFunc(rateBookHandler)))
+
 
 	port := ":8000"
 	log.Printf("Go API sunucusu http://localhost%s adresinde dinlemede...", port)
@@ -1586,3 +1637,83 @@ func debugBooksColumnsHandler(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, 200, cols)
 }
+
+func getCatalogBooksHandler(w http.ResponseWriter, r *http.Request) {
+	username := r.URL.Query().Get("currentUser")
+
+	query := `
+		SELECT 
+			b.id, b.title, b.author, b.description, b.image,
+			(SELECT AVG(rating) FROM ratings WHERE book_id = b.id) as avg_rating,
+			(SELECT rating FROM ratings WHERE book_id = b.id AND username = ?) as user_rating,
+			(SELECT COUNT(*) FROM ratings WHERE book_id = b.id) as rating_count
+		FROM catalog_books b`
+
+	rows, err := db.Query(query, username)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var books []CatalogBook
+	for rows.Next() {
+		var b CatalogBook
+		var avgRating sql.NullFloat64
+		var userRating sql.NullInt64
+		if err := rows.Scan(&b.ID, &b.Title, &b.Author, &b.Description, &b.Image, &avgRating, &userRating, &b.RatingCount); err != nil {
+			continue
+		}
+		if avgRating.Valid {
+			b.AvgRating = avgRating.Float64
+		}
+		if userRating.Valid {
+			b.UserRating = int(userRating.Int64)
+		}
+		books = append(books, b)
+	}
+	respondJSON(w, http.StatusOK, books)
+}
+
+func rateBookHandler(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Username string `json:"username"`
+		BookID   int    `json:"book_id"`
+		Rating   int    `json:"rating"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	_, err := db.Exec(`
+		INSERT INTO ratings (username, book_id, rating) 
+		VALUES (?, ?, ?) 
+		ON CONFLICT(username, book_id) DO UPDATE SET rating = excluded.rating`,
+		req.Username, req.BookID, req.Rating)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	respondJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func seedCatalogBooks() {
+	var count int
+	db.QueryRow("SELECT COUNT(*) FROM catalog_books").Scan(&count)
+	if count > 0 {
+		return
+	}
+
+	books := []CatalogBook{
+		{Title: "1984", Author: "George Orwell", Description: "Büyük Birader sizi izliyor.", Image: "https://images.gr-assets.com/books/1532714506l/40961427.jpg"},
+		{Title: "Simyacı", Author: "Paulo Coelho", Description: "Kendi kişisel menkıbesini arayan bir çobanın hikayesi.", Image: "https://images.gr-assets.com/books/1483412266l/865.jpg"},
+		{Title: "Küçük Prens", Author: "Antoine de Saint-Exupéry", Description: "Gönül gözüyle bakmak.", Image: "https://images.gr-assets.com/books/1367545443l/157993.jpg"},
+	}
+
+	for _, b := range books {
+		db.Exec("INSERT INTO catalog_books (title, author, description, image) VALUES (?, ?, ?, ?)", b.Title, b.Author, b.Description, b.Image)
+	}
+}
+
