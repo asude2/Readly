@@ -112,8 +112,8 @@
     </div>
 
     <!-- Group Details Modal -->
-    <div v-if="showGroupModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-       <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-xl flex flex-col max-h-[80vh]">
+    <div v-if="showGroupModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click="showGroupModal = false">
+       <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-xl flex flex-col max-h-[80vh]" @click.stop>
           <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
              <h3 class="font-bold text-lg">{{ activeConversation?.name }} - Üyeler</h3>
              <i @click="showGroupModal = false" class="fa-solid fa-xmark text-xl cursor-pointer hover:text-red-600 transition-colors"></i>
@@ -145,8 +145,8 @@
     </div>
 
     <!-- New Chat Modal -->
-    <div v-if="showNewChatModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-       <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-xl">
+    <div v-if="showNewChatModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click="showNewChatModal = false">
+       <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-xl" @click.stop>
           <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
              <h3 class="font-bold text-lg">Yeni Sohbet</h3>
              <i @click="showNewChatModal = false" class="fa-solid fa-xmark text-xl cursor-pointer hover:text-red-600 transition-colors"></i>
