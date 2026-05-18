@@ -842,7 +842,7 @@ func getFollowingBooksHandler(w http.ResponseWriter, r *http.Request) {
 		(SELECT COUNT(*) FROM likes WHERE book_id=b.id) as like_count,
 		(SELECT COUNT(*) FROM likes WHERE book_id=b.id AND username=?) as is_liked,
 		(SELECT COUNT(*) FROM comments WHERE book_id=b.id) as comment_count,
-		b.repost_id, rb.title, rb.description, rb.image, rb.username,
+		b.repost_id, rb.title, rb.description, rb.image, rb.username, rb.category,
 		(SELECT COALESCE(photo, '') FROM users WHERE username = rb.username)
         FROM books b 
         LEFT JOIN users u ON b.username = u.username
