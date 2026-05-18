@@ -13,7 +13,7 @@
         <div class="cover-back"></div>
       </div>
 
-      <div class="book-content w-full max-w-md mx-auto p-10 border border-gray-200 dark:border-slate-700 rounded-xl shadow-2xl bg-white dark:bg-slate-800 transition-colors duration-300">
+      <div class="book-content w-full max-w-lg mx-auto p-10 border border-gray-200 dark:border-slate-700 rounded-xl shadow-2xl bg-white dark:bg-slate-800 transition-colors duration-300">
         <h1 class="text-black dark:text-white text-3xl font-bold mb-8 flex items-center">
           <i class="fa-solid fa-arrow-left pr-4 cursor-pointer hover:text-red-600 transition-colors" @click="logoutApp"></i>
           Giriş Yap
@@ -120,7 +120,7 @@ export default {
   height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: start; /* Biraz yukarıda başlasın, mt-10'u korumak için */
+  align-items: center; /* Dikey ve yatay olarak ortala */
   perspective: 2000px; /* Derinlik hissi (çok önemli) */
   overflow: hidden; /* Taşmaları gizle */
 }
@@ -129,8 +129,8 @@ export default {
 .book-wrap {
   position: relative;
   width: 100%;
-  max-width: 448px; /* max-w-md ile aynı */
-  margin-top: 2.5rem; /* mt-10 ile aynı */
+  max-width: 512px; /* max-w-lg ile aynı (büyütüldü) */
+  margin-top: 0; /* Ortaladığımız için margin-top kaldırıldı */
   transition: transform 1s ease-in-out;
   transform-style: preserve-3d; /* Çocukların 3D boşlukta kalmasını sağlar */
 }
