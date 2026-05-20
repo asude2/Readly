@@ -157,6 +157,20 @@ func initDB() {
 		log.Fatal("Likes tablosunu oluşturma hatası:", err)
 	}
 
+	// Bildirim tablosu
+	createNotificationsTable := `CREATE TABLE IF NOT EXISTS notifications(
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		sender TEXT NOT NULL,
+		recipient TEXT NOT NULL,
+		type TEXT NOT NULL,
+		book_id INTEGER,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);`
+	_, err = db.Exec(createNotificationsTable)
+	if err != nil {
+		log.Fatal("Notifications tablosunu oluşturma hatası:", err)
+	}
+
 	//Yorum tablosu
 	createCommentTable := `CREATE TABLE IF NOT EXISTS comments(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -933,9 +947,34 @@ func getNotificationsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	likesRows, err := db.Query(`SELECT n.sender, n.book_id, COALESCE(b.title, '') FROM notifications n LEFT JOIN books b ON b.id = n.book_id WHERE n.recipient = ? AND n.type = 'like' ORDER BY n.created_at DESC`, currentUser)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer likesRows.Close()
+
+	var likes []map[string]interface{}
+	for likesRows.Next() {
+		var sender string
+		var bookID int
+		var title sql.NullString
+		if err := likesRows.Scan(&sender, &bookID, &title); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		likes = append(likes, map[string]interface{}{
+			"sender":     sender,
+			"book_id":    bookID,
+			"book_title": title.String,
+			"message":    sender + " gönderini beğendi.",
+		})
+	}
+
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"pendingRequests": pending,
 		"acceptedFollows": accepted,
+		"likes":           likes,
 	})
 }
 
@@ -1118,6 +1157,13 @@ func toggleLikeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var owner string
+	err := db.QueryRow("SELECT username FROM books WHERE id = ?", req.BookID).Scan(&owner)
+	if err != nil {
+		http.Error(w, "Kitap bulunamadı", http.StatusBadRequest)
+		return
+	}
+
 	//önce silmeyi deniyoruz(eğer varsa beğeni kalkar)
 	res, err := db.Exec("DELETE FROM likes WHERE username=? AND book_id=?", req.Username, req.BookID)
 	if err != nil {
@@ -1133,9 +1179,14 @@ func toggleLikeHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Beğeni eklenemedi", http.StatusInternalServerError)
 			return
 		}
+		if owner != req.Username {
+			_, _ = db.Exec("INSERT OR IGNORE INTO notifications(sender, recipient, type, book_id) VALUES(?, ?, 'like', ?)", req.Username, owner, req.BookID)
+		}
 		respondJSON(w, http.StatusOK, map[string]string{"message": "Kitap beğenildi"})
 	} else {
-		// zaten vardı, silindi
+		if owner != req.Username {
+			_, _ = db.Exec("DELETE FROM notifications WHERE sender=? AND recipient=? AND type='like' AND book_id=?", req.Username, owner, req.BookID)
+		}
 		respondJSON(w, http.StatusOK, map[string]string{"message": "Kitap beğenisi kaldırıldı"})
 	}
 }

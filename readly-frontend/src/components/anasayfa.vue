@@ -114,9 +114,7 @@
               <div class="relative notifications-wrapper">
                 <button @click="toggleNotifications" class="relative p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
                   <i class="fa-regular fa-bell text-xl"></i>
-                  <span v-if="pendingRequests.length" class="absolute top-1 right-1 flex h-3 w-3">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-3 w-3 bg-red-600 border border-white dark:border-gray-900"></span>
+                <span v-if="pendingRequests.length || acceptedFollows.length || likeNotifications.length" class="absolute top-1 right-1 flex h-3 w-3">
                   </span>
                 </button>
 
@@ -127,7 +125,7 @@
                   </div>
 
                   <div class="max-h-60 overflow-y-auto">
-                    <div v-if="pendingRequests.length || acceptedFollows.length">
+                    <div v-if="pendingRequests.length || acceptedFollows.length || likeNotifications.length">
                       <div v-for="item in pendingRequests" :key="`pending-${item.follower}`"
                           class="flex items-center justify-between gap-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 p-3 mb-1 transition-colors">
                         <div class="text-xs text-gray-800 dark:text-gray-300">
@@ -148,6 +146,11 @@
                       <div v-for="item in acceptedFollows" :key="`accepted-${item.follower}`"
                           class="rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 p-3 mb-1 text-xs text-gray-600 dark:text-gray-400 transition-colors">
                         <span class="font-bold text-black dark:text-white">{{ item.follower }}</span> seni takip etti.
+                      </div>
+
+                      <div v-for="item in likeNotifications" :key="`like-${item.sender}-${item.book_id}`"
+                          class="rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 p-3 mb-1 text-xs text-gray-600 dark:text-gray-400 transition-colors">
+                        {{ item.message }}
                       </div>
                     </div>
 
@@ -422,7 +425,7 @@ const activeTab = ref('Tümü')
 
 const pendingRequests = ref([])
 const acceptedFollows = ref([])
-
+const likeNotifications = ref([])
 
 const showRepostModal = ref(false)
 const repostingBook = ref(null)
@@ -515,6 +518,7 @@ const fetchNotifications = async () => {
     if (res.ok) {
       pendingRequests.value = data.pendingRequests || []
       acceptedFollows.value = data.acceptedFollows || []
+      likeNotifications.value = data.likes || []
     } else {
       console.error('Bildirimler alınamadı:', data.error)
     }
@@ -653,6 +657,7 @@ const submitRating = async (book, rating) => {
     if (res.ok) {
       // Refresh only this book's data or all catalog
       fetchCatalogBooks()
+      await fetchNotifications()
     }
   } catch (err) {
     console.error('Puanlama hatası:', err)
