@@ -193,7 +193,7 @@
               <div class="p-5">
                 <h3 class="font-bold text-gray-900 dark:text-white mb-1 line-clamp-1">{{ book.title }}</h3>
                 <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">{{ book.author }}</p>
-                
+
                 <div class="flex flex-col gap-3 pt-3 border-t border-gray-100 dark:border-slate-700">
                   <div class="flex items-center justify-between">
                     <div class="flex items-center gap-1 text-yellow-500">
@@ -201,19 +201,25 @@
                     </div>
                     <span class="text-xs font-bold text-gray-600 dark:text-gray-400">{{ book.avg_rating ? book.avg_rating.toFixed(1) : '0.0' }} ({{ book.rating_count }})</span>
                   </div>
-                  
+
                   <div class="flex items-center justify-between">
                     <span class="text-[10px] uppercase tracking-wider font-bold text-gray-400">Senin Puanın:</span>
                     <div class="flex items-center gap-1">
-                      <i v-for="i in 5" :key="i" 
+                      <i v-for="i in 5" :key="i"
                          @click="submitRating(book, i)"
-                         class="fa-star cursor-pointer transition-colors" 
+                         class="fa-star cursor-pointer transition-colors"
                          :class="[i <= (book.temp_rating || book.user_rating) ? 'fa-solid text-red-500' : 'fa-regular text-gray-300 dark:text-gray-600',
                                  'hover:text-red-400']"
                          @mouseenter="book.temp_rating = i"
                          @mouseleave="book.temp_rating = null"></i>
                     </div>
                   </div>
+                </div>
+              </div>
+              <div class="px-5 pb-5 border-t border-gray-100 dark:border-slate-700">
+                <div @click="toggleComments(book)" class="flex items-center cursor-pointer text-gray-600 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors w-max font-medium">
+                  <i class="fa-regular fa-comment mr-2 text-lg"></i>
+                  <span>Yorumlar ({{ book.comment_count || 0 }})</span>
                 </div>
               </div>
             </div>
@@ -265,7 +271,7 @@
                   </button>
                   <span class="text-sm font-semibold text-gray-800 dark:text-slate-300">{{ book.like_count }}</span>
                 </div>
-                
+
                 <button @click="openRepostModal(book)" class="p-2 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors duration-200 group text-gray-400 dark:text-gray-500 hover:text-green-500">
                   <i class="fa-solid fa-retweet text-xl transition-transform duration-200 group-hover:scale-110"></i>
                 </button>
@@ -276,43 +282,58 @@
                   <i class="fa-regular fa-comment mr-2 text-lg"></i>
                   <span>Yorumlar ({{ book.comment_count || 0 }})</span>
                 </div>
-
-                <div v-if="book.showComments" class="mt-4 bg-gray-50 dark:bg-slate-700/50 p-5 rounded-xl border border-gray-100 dark:border-slate-600 shadow-inner">
-                  <div v-for="c in book.comments" :key="c.id" class="mb-4 text-sm border-b border-gray-200 dark:border-slate-600 last:border-0 pb-3 last:pb-0">
-                    <div class="flex justify-between items-start">
-                      <div class="flex-1">
-                        <p class="font-bold text-red-600 dark:text-red-400 mb-1">{{ c.username }}</p>
-                        <p class="text-gray-800 dark:text-slate-200 leading-relaxed">{{ c.content }}</p>
-                      </div>
-                      <button
-                        v-if="c.username === username"
-                        @click="deleteComment(book, c.id)"
-                        class="ml-3 text-gray-400 hover:text-red-600 dark:hover:text-red-400 p-1 rounded transition-colors"
-                      >
-                        <i class="fa-solid fa-trash"></i>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="flex mt-4 items-center gap-3">
-                  <input v-model="book.newComment" @keyup.enter="submitComment(book)" placeholder="Yorumunu yaz..." class="flex-1 border border-slate-300 dark:border-slate-600 rounded-full px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-red-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 transition-shadow">
-                  <button @click="submitComment(book)" class="bg-red-600 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-red-700 shadow-sm hover:shadow-md transition-all"><i class="fa-solid fa-paper-plane"></i></button>
-                </div>
               </div>
 
             </div>
           </div>
         </div>
 
+        <!-- Yorumlar Modal -->
+        <transition name="zoom">
+          <div v-if="selectedCommentBook" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 p-4" @click="closeCommentModal">
+            <div class="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200 dark:border-slate-700" @click.stop>
+              <div class="flex items-start justify-between gap-4 p-5 border-b border-gray-200 dark:border-slate-700">
+                <div>
+                  <h2 class="text-2xl font-bold text-black dark:text-white">Yorumlar</h2>
+                  <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ selectedCommentBook.title }}</p>
+                </div>
+                <button @click="closeCommentModal" class="text-gray-500 hover:text-red-500 transition-colors"><i class="fa-solid fa-times text-2xl"></i></button>
+              </div>
+              <div class="p-5">
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Toplam: <span class="font-semibold text-gray-900 dark:text-white">{{ selectedCommentBook.comment_count || 0 }}</span> yorum</p>
+                <div v-if="selectedCommentBook.comments.length === 0" class="rounded-2xl bg-gray-50 dark:bg-slate-700 p-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  Henüz yorum yok. İlk yorumu sen yap!
+                </div>
+                <div v-for="c in selectedCommentBook.comments" :key="c.id" class="mb-4 text-sm border-b border-gray-200 dark:border-slate-600 pb-4 last:pb-0 last:border-0">
+                  <div class="flex justify-between items-start gap-3">
+                    <div class="flex-1">
+                      <p class="font-semibold text-red-600 dark:text-red-400 mb-1">{{ c.username }}</p>
+                      <p class="text-gray-800 dark:text-slate-200 leading-relaxed">{{ c.content }}</p>
+                    </div>
+                    <button v-if="c.username === username" @click="deleteComment(selectedCommentBook, c.id)" class="text-gray-400 hover:text-red-600 dark:hover:text-red-400 p-2 rounded-full transition-colors">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="mt-4 flex flex-col gap-3">
+                  <textarea v-model="selectedCommentBook.newComment" rows="3" placeholder="Yorumunu yaz..." class="w-full border border-slate-300 dark:border-slate-600 rounded-3xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-red-500 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 transition-shadow"></textarea>
+                  <div class="flex justify-end">
+                    <button @click="submitComment(selectedCommentBook)" class="bg-red-600 text-white px-6 py-2 rounded-full text-sm font-semibold hover:bg-red-700 shadow-sm transition-all">Gönder</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+
         <!-- Alıntı Modal -->
         <transition name="zoom">
           <div v-if="showRepostModal" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50" @click="showRepostModal = false">
             <div class="bg-white dark:bg-slate-800 p-8 rounded-xl w-full max-w-lg shadow-2xl border border-gray-200 dark:border-slate-700" @click.stop>
               <h2 class="text-xl font-bold mb-6 text-black dark:text-white"><i class="fa-solid fa-retweet mr-2 text-green-500"></i>Alıntıla</h2>
-              
+
               <textarea v-model="repostText" rows="3" placeholder="Bu gönderi hakkında ne düşünüyorsun?" class="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 mb-4 bg-gray-50 dark:bg-slate-700/50 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
-              
+
               <!-- Alıntılanan post önizlemesi -->
               <div v-if="repostingBook" class="border border-gray-200 dark:border-slate-700 rounded-xl p-4 bg-gray-50 dark:bg-slate-800/50 mb-6">
                  <div class="flex items-center gap-2 mb-2">
@@ -342,7 +363,7 @@
                  <h2 class="text-xl font-bold text-black dark:text-white"><i class="fa-solid fa-book-open mr-2 text-red-500"></i>Orijinal Gönderi</h2>
                  <button @click="showOriginalPostModal = false" class="text-gray-500 hover:text-red-500 transition-colors"><i class="fa-solid fa-times text-2xl"></i></button>
                </div>
-               
+
                <p @click="goUsersProfile(viewingOriginalPost.username)" class="flex items-center cursor-pointer font-semibold text-lg mb-5 px-4 py-1.5 inline-flex bg-gray-100 dark:bg-slate-700 text-gray-900 dark:text-slate-200 hover:bg-red-600 dark:hover:bg-red-600 hover:text-white rounded-lg transition-colors w-max">
                   <img v-if="viewingOriginalPost.user_photo" :src="viewingOriginalPost.user_photo" class="w-8 h-8 rounded-full mr-2 object-cover border border-white">
                   <i v-else class="fa-solid fa-circle-user text-sm mr-2"></i>{{ viewingOriginalPost.username }}
@@ -409,6 +430,7 @@ const repostText = ref('')
 
 const showOriginalPostModal = ref(false)
 const viewingOriginalPost = ref(null)
+const selectedCommentBook = ref(null)
 
 const unreadMessageCount = ref(0)
 let messagePollingInterval = null
@@ -428,17 +450,17 @@ const fetchUnreadMessageCount = async () => {
 
 const filteredBooks = computed(() => {
   let result = books.value
-  
+
   if (activeTab.value !== 'Tümü') {
     result = result.filter(book => book.category === activeTab.value)
   }
-  
+
   if (searchBookQuery.value) {
     result = result.filter(book =>
       book.title.toLowerCase().includes(searchBookQuery.value.toLowerCase())
     )
   }
-  
+
   return result
 })
 
@@ -602,7 +624,15 @@ const fetchCatalogBooks = async () => {
     const res = await fetch(`http://localhost:8000/api/catalog/books?currentUser=${username.value}`)
     const data = await res.json()
     if (res.ok) {
-      catalogBooks.value = data.map(b => ({...b, temp_rating: null}))
+      catalogBooks.value = data.map(b => ({
+        ...b,
+        temp_rating: null,
+        showComments: false,
+        comments: [],
+        newComment: '',
+        comment_count: b.comment_count || 0,
+        catalog_book_id: b.id
+      }))
     }
   } catch (err) {
     console.error('Katalog kitapları fetch hatası:', err)
@@ -702,34 +732,47 @@ const fetchComments = async (bookId) => {
 
 //yorumları açıp kapama ve yorumları fetchleme
 const toggleComments = async (book) => {
-  book.showComments = !book.showComments;
+  const isSameBook = selectedCommentBook.value && selectedCommentBook.value.id === book.id && (!!selectedCommentBook.value.catalog_book_id === !!book.catalog_book_id)
+  if (isSameBook) {
+    selectedCommentBook.value = null
+    return
+  }
 
-  //eğer daha önce yorumlar yüklenmemişse backendden çek
-  if (book.showComments && book.comments.length === 0) {
+  selectedCommentBook.value = book
+  if (!book.comments || book.comments.length === 0) {
     try {
-      const res = await fetch(`http://localhost:8000/api/getComments?book_id=${book.id}`);
+      const param = book.catalog_book_id ? `catalog_book_id=${book.id}` : `book_id=${book.id}`;
+      const res = await fetch(`http://localhost:8000/api/getComments?${param}`);
       const data = await res.json();
       book.comments = data || [];
     } catch (err) { console.error('Yorum yükleme hatası:', err); }
   }
 };
 
+const closeCommentModal = () => {
+  selectedCommentBook.value = null
+};
+
 const submitComment = async (book) => {
   if (!book.newComment.trim()) return;
 
   try {
+    const payload = {
+      username: username.value,
+      content: book.newComment
+    };
+    if (book.catalog_book_id) payload.catalog_book_id = book.id;
+    else payload.book_id = book.id;
+
     const res = await fetch('http://localhost:8000/api/addComment', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username: username.value,
-        book_id: book.id,
-        content: book.newComment
-      })
+      body: JSON.stringify(payload)
     });
     if (res.ok) {
       const saveComment = await res.json();
       book.comments.push(saveComment); //listeye yeni yorumu ekle
+      book.comment_count = (book.comment_count || 0) + 1
       book.newComment = ''; //inputu temizle
     }
   } catch (err) {
@@ -832,11 +875,11 @@ onMounted(async () => {
     router.push('/')
     return
   }
-  
+
   await fetchProfile()
   await fetchAllBooks()
   await fetchNotifications()
-  
+
   fetchUnreadMessageCount()
   messagePollingInterval = setInterval(fetchUnreadMessageCount, 3000)
 

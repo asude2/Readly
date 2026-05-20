@@ -40,21 +40,23 @@ type Like struct {
 	BookID   int    `json:"book_id"`
 }
 type Comment struct {
-	ID       int    `json:"id"`
-	Username string `json:"username"`
-	BookID   int    `json:"book_id"`
-	Content  string `json:"content"`
+	ID            int    `json:"id"`
+	Username      string `json:"username"`
+	BookID        int    `json:"book_id,omitempty"`
+	CatalogBookID int    `json:"catalog_book_id,omitempty"`
+	Content       string `json:"content"`
 }
 
 type CatalogBook struct {
-	ID          int     `json:"id"`
-	Title       string  `json:"title"`
-	Author      string  `json:"author"`
-	Description string  `json:"description"`
-	Image       string  `json:"image"`
-	AvgRating   float64 `json:"avg_rating"`
-	UserRating  int     `json:"user_rating"`
-	RatingCount int     `json:"rating_count"`
+	ID           int     `json:"id"`
+	Title        string  `json:"title"`
+	Author       string  `json:"author"`
+	Description  string  `json:"description"`
+	Image        string  `json:"image"`
+	AvgRating    float64 `json:"avg_rating"`
+	UserRating   int     `json:"user_rating"`
+	RatingCount  int     `json:"rating_count"`
+	CommentCount int     `json:"comment_count"`
 }
 
 type Rating struct {
@@ -63,7 +65,6 @@ type Rating struct {
 	BookID   int    `json:"book_id"`
 	Rating   int    `json:"rating"`
 }
-
 
 //! MODELLER END ----------------------------------------------------------------------------------
 
@@ -159,13 +160,19 @@ func initDB() {
 	//Yorum tablosu
 	createCommentTable := `CREATE TABLE IF NOT EXISTS comments(
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		username TEXT NOT NULL,        
-		book_id INTEGER NOT NULL,
+		username TEXT NOT NULL,
+		book_id INTEGER,
+		catalog_book_id INTEGER,
 		content TEXT NOT NULL
 	);`
 	_, err = db.Exec(createCommentTable)
 	if err != nil {
 		log.Fatal("Comment tablosunu oluşturma hatası:", err)
+	}
+
+	_, err = db.Exec(`ALTER TABLE comments ADD COLUMN catalog_book_id INTEGER`)
+	if err != nil {
+		log.Println("Comments tablosuna catalog_book_id eklenemedi (muhtemelen zaten var):", err)
 	}
 
 	// Mesajlaşma Tabloları
@@ -231,7 +238,6 @@ func initDB() {
 
 	seedCatalogBooks()
 }
-
 
 //! TABLOLARIN OLUŞTURULMASI END ----------------------------------------------------------------------------------
 
@@ -1156,7 +1162,16 @@ func addCommentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := db.Exec("INSERT INTO comments(username, book_id, content) VALUES(?, ?, ?)", c.Username, c.BookID, c.Content)
+	if c.BookID == 0 && c.CatalogBookID == 0 {
+		http.Error(w, "book_id veya catalog_book_id gereklidir", http.StatusBadRequest)
+		return
+	}
+	if c.BookID != 0 && c.CatalogBookID != 0 {
+		http.Error(w, "book_id ve catalog_book_id aynı anda olamaz", http.StatusBadRequest)
+		return
+	}
+
+	res, err := db.Exec("INSERT INTO comments(username, book_id, catalog_book_id, content) VALUES(?, ?, ?, ?)", c.Username, c.BookID, c.CatalogBookID, c.Content)
 
 	if err != nil {
 		http.Error(w, "Veritabanı kayıt hatası", http.StatusInternalServerError)
@@ -1176,13 +1191,22 @@ func getCommentsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	bookID := r.URL.Query().Get("book_id")
-	if bookID == "" {
-		http.Error(w, "book_id is required", http.StatusBadRequest)
+	catalogBookID := r.URL.Query().Get("catalog_book_id")
+	if bookID == "" && catalogBookID == "" {
+		http.Error(w, "book_id veya catalog_book_id gereklidir", http.StatusBadRequest)
 		return
 	}
 
-	//veritabanından bu kitaba ait tüm yorumları çekelim
-	rows, err := db.Query("SELECT id, username, book_id, content FROM comments WHERE book_id = ?", bookID)
+	query := "SELECT id, username, book_id, catalog_book_id, content FROM comments"
+	var rows *sql.Rows
+	var err error
+	if catalogBookID != "" {
+		query += " WHERE catalog_book_id = ?"
+		rows, err = db.Query(query, catalogBookID)
+	} else {
+		query += " WHERE book_id = ?"
+		rows, err = db.Query(query, bookID)
+	}
 	if err != nil {
 		http.Error(w, "Veritabanı okuma hatası", http.StatusInternalServerError)
 		return
@@ -1194,7 +1218,7 @@ func getCommentsHandler(w http.ResponseWriter, r *http.Request) {
 	var comments []Comment
 	for rows.Next() {
 		var c Comment
-		err := rows.Scan(&c.ID, &c.Username, &c.BookID, &c.Content)
+		err := rows.Scan(&c.ID, &c.Username, &c.BookID, &c.CatalogBookID, &c.Content)
 		if err != nil {
 			http.Error(w, "Veritabanı okuma hatası", http.StatusInternalServerError)
 			return
@@ -1305,7 +1329,6 @@ func main() {
 	http.Handle("/api/messages/removeGroupMember", enableCORS(http.HandlerFunc(removeGroupMemberHandler)))
 	http.Handle("/api/catalog/books", enableCORS(http.HandlerFunc(getCatalogBooksHandler)))
 	http.Handle("/api/catalog/rate", enableCORS(http.HandlerFunc(rateBookHandler)))
-
 
 	port := ":8000"
 	log.Printf("Go API sunucusu http://localhost%s adresinde dinlemede...", port)
@@ -1646,7 +1669,8 @@ func getCatalogBooksHandler(w http.ResponseWriter, r *http.Request) {
 			b.id, b.title, b.author, b.description, b.image,
 			(SELECT AVG(rating) FROM ratings WHERE book_id = b.id) as avg_rating,
 			(SELECT rating FROM ratings WHERE book_id = b.id AND username = ?) as user_rating,
-			(SELECT COUNT(*) FROM ratings WHERE book_id = b.id) as rating_count
+			(SELECT COUNT(*) FROM ratings WHERE book_id = b.id) as rating_count,
+			(SELECT COUNT(*) FROM comments WHERE catalog_book_id = b.id) as comment_count
 		FROM catalog_books b`
 
 	rows, err := db.Query(query, username)
@@ -1661,7 +1685,7 @@ func getCatalogBooksHandler(w http.ResponseWriter, r *http.Request) {
 		var b CatalogBook
 		var avgRating sql.NullFloat64
 		var userRating sql.NullInt64
-		if err := rows.Scan(&b.ID, &b.Title, &b.Author, &b.Description, &b.Image, &avgRating, &userRating, &b.RatingCount); err != nil {
+		if err := rows.Scan(&b.ID, &b.Title, &b.Author, &b.Description, &b.Image, &avgRating, &userRating, &b.RatingCount, &b.CommentCount); err != nil {
 			continue
 		}
 		if avgRating.Valid {
@@ -1716,4 +1740,3 @@ func seedCatalogBooks() {
 		db.Exec("INSERT INTO catalog_books (title, author, description, image) VALUES (?, ?, ?, ?)", b.Title, b.Author, b.Description, b.Image)
 	}
 }
-
